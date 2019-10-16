@@ -12,7 +12,7 @@ pip install git+https://github.com/ezwelty/goodtables-pandas-py
 ```python
 import goodtables_pandas as goodtables
 
-report = goodtables.validate(source='datapakage.json')
+report = goodtables.validate(source='datapackage.json')
 ```
 
 ## Implementation notes
