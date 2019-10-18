@@ -149,9 +149,9 @@ def check_foreign_keys(df, foreignKeys, references={}, constraint=None):
         # Check parent key constraint
         perrors = []
         if constraint is not None:
-            if constraint.lower() == 'uniqueKey':
+            if constraint.lower() == 'uniquekey':
                 perrors = check_unique_keys(parent, [pkey])
-            elif constraint.lower() == 'primaryKey':
+            elif constraint.lower() == 'primarykey':
                 perrors = check_primary_key(parent, pkey)
         if perrors and parent is not child:
             for e in enumerate(perrors):
