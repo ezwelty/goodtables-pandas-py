@@ -89,6 +89,7 @@ def validate(source, return_tables=False):
         result = read_table(resource, path=_as_list(resource.get('path', '')))
         if isinstance(result, list):
             errors += result
+            report['tables'][i]['errors'] += errors
             continue
         # Before parsing, run checks on:
         # constraint: pattern | type: ~string
@@ -111,6 +112,7 @@ def validate(source, return_tables=False):
         result = parse_table(result, schema=resource.get('schema', {}))
         if isinstance(result, list):
             errors += result
+            report['tables'][i]['errors'] += errors
             continue
         # Check table
         name = resource['name']
