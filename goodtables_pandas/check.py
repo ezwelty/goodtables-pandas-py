@@ -70,7 +70,7 @@ def check_field_constraints(
                     name=name, code='maximum-constraint', constraint='maximum',
                     value=maximum, values=list(x[invalid].unique())))
     if pattern and type in ('string', ):
-        invalid = ~x.str.contains('^' + pattern + '$')
+        invalid = ~x.str.match('^' + pattern + '$')
         if invalid.any():
             errors.append(constraint_error(
                 name=name, code='pattern-constraint', constraint='pattern',
