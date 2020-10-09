@@ -86,7 +86,9 @@ def validate(source, return_tables=False):
             continue
         errors = []
         # Read table
-        result = read_table(resource, path=_as_list(resource.get('path', '')))
+        # Pull resolved paths from goodtables
+        paths = _as_list(report['tables'][i].get('source', ''))
+        result = read_table(resource, path=paths)
         if isinstance(result, list):
             errors += result
             report['tables'][i]['errors'] += errors
