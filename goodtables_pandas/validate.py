@@ -155,5 +155,4 @@ def validate(source, return_tables=False):
     # Return report
     if return_tables:
         return report, dfs
-    else:
-        return report
+    return report

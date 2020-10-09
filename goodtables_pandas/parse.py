@@ -35,9 +35,8 @@ def parse_field_constraint(x, constraint, type='string', **field):
             name=field.get('name', 'field'), constraint=constraint,
             value=X[is_str].unique().tolist() if is_list else x,
             type=type, format=data['format'])
-    else:
-        X[is_str] = result
-        return X.tolist() if is_list else X[0]
+    X[is_str] = result
+    return X.tolist() if is_list else X[0]
 
 # ---- Field parsers ----
 

@@ -14,19 +14,17 @@ class JSONEncoder(json.JSONEncoder):
             if primitives:
                 out = [str(i) for i in o]
                 return '[' + ', '.join(out) + ']'
-            else:
-                self.indent_n += self.indent
-                out = [self.indent_str + self.encode(i) for i in o]
-                self.indent_n -= self.indent
-                return '[\n' + ',\n'.join(out) + '\n' + self.indent_str + ']'
-        elif isinstance(o, dict):
+            self.indent_n += self.indent
+            out = [self.indent_str + self.encode(i) for i in o]
+            self.indent_n -= self.indent
+            return '[\n' + ',\n'.join(out) + '\n' + self.indent_str + ']'
+        if isinstance(o, dict):
             self.indent_n += self.indent
             out = [(self.indent_str + str(k) + ': '
                 + self.encode(v)) for k, v in o.items()]
             self.indent_n -= self.indent
             return '{\n' + ',\n'.join(out) + '\n' + self.indent_str + '}'
-        else:
-            return json.dumps(o, default=str)
+        return json.dumps(o, default=str)
 
 def dumps(obj, indent=2, cls=JSONEncoder, **kwargs):
     return json.dumps(obj, indent=indent, cls=cls, **kwargs)
