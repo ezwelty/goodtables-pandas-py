@@ -166,10 +166,12 @@ def check_foreign_keys(df, foreignKeys, references={}, constraint=None):
                         values=e._message_substitutions['values'])
                 errors.append(e)
         # Check local key in parent key (or has null values)
-        x, y = child[ckey], parent[pkey]
         if len(ckey) == 1:
+            x, y = child[ckey], parent[pkey]
             invalid = ~(x.iloc[:, 0].isin(y.iloc[:, 0]) | x.iloc[:, 0].isna())
         else:
+            key = range(len(ckey))
+            x, y = child[ckey].set_axis(key, axis=1), parent[pkey].set_axis(key, axis=1)
             invalid = ~(pandas.concat([y, x]).duplicated().iloc[len(y):] |
                 x.isna().any(axis=1))
         if invalid.any():
