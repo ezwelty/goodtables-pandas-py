@@ -44,20 +44,18 @@ def parse_field_constraint(x: Union[str, int, float, bool, list], constraint: st
 # ---- Field parsers ----
 
 def parse_string(x: pd.Series, format: Literal['default', 'email', 'uri', 'binary', 'uuid'] = 'default') -> Union[pd.Series, goodtables.Error]:
-    pattern = None
-    if format == 'email':
+    patterns = {
         # https://emailregex.com/
-        pattern = r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$"
-    elif format == 'uri':
+        'email': r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$",
         # https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
         # https://www.regextester.com/94092
-        pattern = r"^\w+:(\/?\/?)[^\s]+$"
-    elif format == 'binary':
+        'uri': r"^\w+:(\/?\/?)[^\s]+$",
         # https://stackoverflow.com/questions/475074/regex-to-parse-or-validate-base64-data
-        pattern = r"[^-A-Za-z0-9+/=]|=[^=]|={3,}$"
-    elif format == 'uuid':
+        'binary': r"[^-A-Za-z0-9+/=]|=[^=]|={3,}$",
         # https://en.wikipedia.org/wiki/Universally_unique_identifier
-        pattern = r"[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}"
+        'uuid': r"[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}"
+    }
+    pattern = patterns.get(format)
     if pattern:
         invalid = ~x.str.contains(pattern)
         if invalid.any():
