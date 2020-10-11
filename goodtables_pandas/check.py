@@ -1,11 +1,14 @@
-import pandas
+from typing import Any, Dict, Iterable, List, Literal, Union
+
 import goodtables
+import pandas as pd
+
 from .errors import (constraint_error, key_error, foreign_key_error)
 from .parse import parse_field_constraint
 
 # ---- Field constraints ----
 
-def check_constraints(df, schema):
+def check_constraints(df: pd.DataFrame, schema: dict) -> List[goodtables.Error]:
     errors = []
     for field in schema.get('fields', []):
         constraints = field.get('constraints', {})
@@ -16,9 +19,9 @@ def check_constraints(df, schema):
     return errors
 
 def check_field_constraints(
-    x, required=False, unique=False, minLength=None,
-    maxLength=None, minimum=None, maximum=None, pattern=None, enum=None,
-    field={}):
+    x: pd.Series, required: bool = False, unique: bool = False, minLength: int = None,
+    maxLength: int = None, minimum: Union[str, int, float, bool] = None, maximum: Union[str, int, float, bool] = None, pattern: str = None, enum: Iterable[Union[str, int, float, bool]] = None,
+    field: dict = {}) -> List[goodtables.Error]:
     name = field.get('name', 'field')
     type = field.get('type', 'string')
     errors = []
@@ -89,12 +92,12 @@ def check_field_constraints(
 
 # ---- Key constraints ----
 
-def _as_list(x):
+def _as_list(x: Any) -> List[Any]:
     if not isinstance(x, list):
         x = [x]
     return x
 
-def _check_primary_key_required(df, primaryKey):
+def _check_primary_key_required(df: pd.DataFrame, primaryKey: Union[str, List[str]]) -> List[goodtables.Error]:
     errors = []
     key = _as_list(primaryKey)
     for name in key:
@@ -102,7 +105,7 @@ def _check_primary_key_required(df, primaryKey):
             df[name], required=True, field=dict(name=name))
     return errors
 
-def check_primary_key(df, primaryKey, skip_required=False, skip_single=False):
+def check_primary_key(df: pd.DataFrame, primaryKey: Union[str, List[str]], skip_required: bool = False, skip_single: bool = False) -> List[goodtables.Error]:
     errors = []
     key = _as_list(primaryKey)
     if key:
@@ -118,7 +121,7 @@ def check_primary_key(df, primaryKey, skip_required=False, skip_single=False):
                 values=df[key][invalid].drop_duplicates().values.tolist()))
     return errors
 
-def check_unique_keys(df, uniqueKeys, skip_single=False):
+def check_unique_keys(df: pd.DataFrame, uniqueKeys: Iterable[Union[str, List[str]]], skip_single: bool = False) -> List[goodtables.Error]:
     errors = []
     for uniqueKey in uniqueKeys:
         key = _as_list(uniqueKey)
@@ -132,7 +135,7 @@ def check_unique_keys(df, uniqueKeys, skip_single=False):
                 values=df[key][invalid].drop_duplicates().values.tolist()))
     return errors
 
-def check_foreign_keys(df, foreignKeys, references={}, constraint=None):
+def check_foreign_keys(df: pd.DataFrame, foreignKeys: Iterable[dict], references: Dict[str, pd.DataFrame] = {}, constraint: Literal['uniquekey', 'primarykey'] = None) -> List[goodtables.Error]:
     errors = []
     child = df
     for foreignKey in foreignKeys:
@@ -172,7 +175,7 @@ def check_foreign_keys(df, foreignKeys, references={}, constraint=None):
         else:
             key = range(len(ckey))
             x, y = child[ckey].set_axis(key, axis=1), parent[pkey].set_axis(key, axis=1)
-            invalid = ~(pandas.concat([y, x]).duplicated().iloc[len(y):] |
+            invalid = ~(pd.concat([y, x]).duplicated().iloc[len(y):] |
                 x.isna().any(axis=1))
         if invalid.any():
             errors.append(key_error(

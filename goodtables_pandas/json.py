@@ -1,14 +1,15 @@
 import json
+from typing import Any
 
 # Inspired by https://stackoverflow.com/a/26512016
 class JSONEncoder(json.JSONEncoder):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any):
         super(JSONEncoder, self).__init__(*args, **kwargs)
         self.indent_n = 0
     @property
-    def indent_str(self):
+    def indent_str(self) -> str:
         return ' ' * self.indent_n
-    def encode(self, o):
+    def encode(self, o: Any) -> str:
         if isinstance(o, list):
             primitives = not any([isinstance(i, (list, dict)) for i in o])
             if primitives:
@@ -26,5 +27,5 @@ class JSONEncoder(json.JSONEncoder):
             return '{\n' + ',\n'.join(out) + '\n' + self.indent_str + '}'
         return json.dumps(o, default=str)
 
-def dumps(obj, indent=2, cls=JSONEncoder, **kwargs):
+def dumps(obj: Any, indent: int = 2, cls: type = JSONEncoder, **kwargs: Any) -> str:
     return json.dumps(obj, indent=indent, cls=cls, **kwargs)

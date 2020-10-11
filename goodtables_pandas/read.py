@@ -1,9 +1,11 @@
 import csv
-import pandas
+from typing import Dict, List, Union
+
 import goodtables
+import pandas as pd
 
 class CSVDialect(csv.Dialect):
-    def __init__(self, dialect={}):
+    def __init__(self, dialect: dict = {}):
         self.delimiter = dialect.get('delimiter', ',')
         self.doublequote = dialect.get('doubleQuote', True)
         self.escapechar = dialect.get('escapeChar', None)
@@ -13,7 +15,7 @@ class CSVDialect(csv.Dialect):
         self.skipinitialspace = dialect.get('skipInitialSpace', True)
         self.strict = True
 
-def read_table(resource, path=None):
+def read_table(resource: dict, path: str = None) -> Union[pd.DataFrame, List[goodtables.Error]]:
     schema = resource.get('schema', {})
     dialect = resource.get('dialect', {})
     kwargs = dict(
@@ -38,7 +40,7 @@ def read_table(resource, path=None):
     tables = []
     for p in path:
         try:
-            tables.append(pandas.read_csv(p, **kwargs))
+            tables.append(pd.read_csv(p, **kwargs))
         except Exception as e:
             return [goodtables.Error(code='io-error', message=str(e))]
-    return pandas.concat(tables)
+    return pd.concat(tables)

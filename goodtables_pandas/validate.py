@@ -1,15 +1,19 @@
-import re
-import math
 import datetime
-import goodtables
+import math
+import re
+from typing import Dict, Tuple, Union
+
 import datapackage
-from .read import read_table
-from .parse import parse_table
+import goodtables
+import pandas as pd
+
 from .check import (
     _as_list, check_constraints, check_field_constraints,
-    check_primary_key, check_unique_keys, check_foreign_keys)
+    check_foreign_keys, check_primary_key, check_unique_keys)
+from .parse import parse_table
+from .read import read_table
 
-def validate(source, return_tables=False):
+def validate(source: Union[str, dict], return_tables: bool = False) -> Union[dict, Tuple[dict, Dict[str, pd.DataFrame]]]:
     # Start clock
     start = datetime.datetime.now()
     # Initialize report
