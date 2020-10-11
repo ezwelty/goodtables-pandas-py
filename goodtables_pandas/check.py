@@ -168,7 +168,7 @@ def check_foreign_keys(df, foreignKeys, references={}, constraint=None):
         # Check local key in parent key (or has null values)
         x, y = child[ckey], parent[pkey]
         if len(ckey) == 1:
-            invalid = ~(x.ix[:, 0].isin(y.ix[:, 0]) | x.ix[:, 0].isna())
+            invalid = ~(x.iloc[:, 0].isin(y.iloc[:, 0]) | x.iloc[:, 0].isna())
         else:
             invalid = ~(pandas.concat([y, x]).duplicated().iloc[len(y):] |
                 x.isna().any(axis=1))
