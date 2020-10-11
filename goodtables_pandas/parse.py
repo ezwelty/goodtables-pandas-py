@@ -103,3 +103,52 @@ def parse_boolean(
     x = true.astype(int).astype('Int64')
     x[na] = np.nan
     return x
+
+def parse_date(x, format='default'):
+    patterns = {'default': '%Y-%m-%d', 'any': None}
+    pattern = patterns.get(format, format)
+    parsed = pandas.to_datetime(x, errors='coerce', format=pattern, infer_datetime_format=True)
+    invalid = ~x.isna() & parsed.isna()
+    if invalid.any():
+        invalids = x[invalid].unique().tolist()
+        return type_or_format_error(type='date', format=format, values=invalids)
+    return parsed
+
+def parse_datetime(x, format='default'):
+    patterns = {'default': '%Y-%m-%dT%H:%M:%SZ', 'any': None}
+    pattern = patterns.get(format, format)
+    parsed = pandas.to_datetime(x, errors='coerce', format=pattern, infer_datetime_format=True)
+    invalid = ~x.isna() & parsed.isna()
+    if invalid.any():
+        invalids = x[invalid].unique().tolist()
+        return type_or_format_error(type='datetime', format=format, values=invalids)
+    return parsed
+
+def parse_year(x):
+    na = x.isna()
+    x = x.copy()
+    try:
+        # NOTE: Does not permit timezone specification
+        # https://www.w3.org/TR/xmlschema-2/#timeZonePermited
+        x[~na] = x[~na].astype(int)
+        return x.astype('Int64')
+    except ValueError as e:
+        return type_or_format_error(message=str(e), type='year')
+
+def parse_geopoint(x, format='default'):
+    mask = ~x.isna()
+    if format in ('default', 'array'):
+        pattern = r'^(?P<lon>.*), *(?P<lat>.*)$' if format == 'default' else r'^\[ *(?P<lon>.*), *(?P<lat>.*) *\]$'
+        parsed = x[mask].str.extract(pattern, expand=True).apply(pandas.to_numeric, axis=1, errors='coerce')
+    elif format == 'object':
+        # apply(json.loads) much slower than str.extract(pattern)
+        pattern = r'^\{ *"lon": *(?P<lon>.*), *"lat": *(?P<lat>.*) *\}$'
+        parsed = x[mask].str.extract(pattern, expand=True).apply(pandas.to_numeric, axis=1, errors='coerce')
+        missing = parsed.isna().any(axis=1)
+        pattern = r'^\{ *"lat": *(?P<lat>.*), *"lon": *(?P<lon>.*) *\}$'
+        parsed[missing] = x[mask][missing].str.extract(pattern).apply(pandas.to_numeric, axis=1, errors='coerce')
+    invalid = parsed.isna().any(axis=1)
+    if invalid.any():
+        invalids = x[mask][invalid].unique().tolist()
+        return type_or_format_error(type='geopoint', format=format, values=invalids)
+    return pd.Series(zip(parsed['lon'], parsed['lat']), index=parsed.index).reindex_like(x)
