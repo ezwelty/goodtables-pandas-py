@@ -1,7 +1,7 @@
 import base64
 import datetime
 import re
-from typing import Any, Iterable, List, Literal, Optional, Union
+from typing import Any, Iterable, List, Literal, Union
 
 import goodtables
 import numpy as np
@@ -143,11 +143,22 @@ def parse_number(x: pd.Series, decimalChar: str = '.', groupChar: str = None, ba
     # Replace 'NULL' with NaN
     return parsed.where(~unparsed).astype(float)
 
-def _parse_integer(xi: str) -> Optional[int]:
+_INTEGER_PATTERN = re.compile(r"([+-]?[0-9]+)")
+
+def _extract_integer(xi: Union[str, float]) -> Union[str, float]:
+  try:
+    parts = _INTEGER_PATTERN.findall(xi)
+    if len(parts) == 1:
+      return parts[0]
+    return np.nan
+  except TypeError:
+    return np.nan
+
+def _parse_integer(xi: str) -> Union[int, float]:
     try:
         return int(xi)
     except ValueError:
-        return None
+        return np.nan
 
 def parse_integer(x: pd.Series, bareNumber: bool = True) -> Union[pd.Series, goodtables.Error]:
     """
@@ -162,9 +173,8 @@ def parse_integer(x: pd.Series, bareNumber: bool = True) -> Union[pd.Series, goo
     """
     parsed = x
     if not bareNumber:
-        number = r"([+-]?[0-9]+)"
-        parsed = parsed.str.extract(number, expand=False)
-    parsed = parsed.apply(_parse_integer)
+        parsed = parsed.apply(_extract_integer, convert_dtype=False)
+    parsed = parsed.apply(_parse_integer, convert_dtype=False)
     invalid = ~x.isna() & parsed.isna()
     if invalid.any():
         invalids = x[invalid].unique().tolist()

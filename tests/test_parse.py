@@ -287,9 +287,17 @@ def test_parses_valid_integer_with_text() -> None:
         ('EUR +123', 123),
         ('$ -123 USD', -123),
         ('Total: +1', 1),
-        ('** -1 **', -1),
-        ('$1e2', 1),
-        ('1E2%', 1),
+        ('** -1 **', -1)
     ])
     parsed = parse_integer(df[0], bareNumber=False)
     pd.testing.assert_series_equal(parsed, df[1].astype('Int64'), check_names=False)
+
+def test_rejects_ambiguous_integer_with_text() -> None:
+    x = pd.Series([
+        '1.2',
+        '1e2',
+        '1+2',
+        '1 2',
+    ])
+    error = parse_integer(x, bareNumber=False)
+    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions['values']))
