@@ -3,6 +3,7 @@ import re
 from typing import Any, Iterable, List, Literal, Union
 
 import goodtables
+import numpy as np
 import pandas as pd
 
 from .errors import type_or_format_error, constraint_type_or_format_error
@@ -94,18 +95,45 @@ def parse_string(x: pd.Series, format: Literal['default', 'email', 'uri', 'binar
                 values=x[invalid].dropna().unique().tolist())
     return x
 
+def _parse_number(xi: str) -> Union[float, str]:
+    try:
+        return float(xi)
+    except ValueError:
+        return 'NULL'
+
 def parse_number(x: pd.Series, decimalChar: str = '.', groupChar: str = None, bareNumber: bool = True) -> Union[pd.Series, goodtables.Error]:
+    """
+    Parse strings as numbers.
+
+    Unlike Table Schema, the special string values `-nan`, `infinity`, and `-infinity`
+    are also permitted.
+
+    Arguments:
+        x: Strings.
+        decimalChar: String used to represent a decimal point. Can be of any length.
+        groupChar: String used to group digits. Can be of any length.
+        bareNumber: Whether the numbers are bare, or padded with non-numeric text.
+
+    Returns:
+        Either parsed numbers or a parsing error.
+    """
     if groupChar:
         x = x.str.replace(groupChar, '', regex=False)
     if decimalChar != '.':
         x = x.str.replace(decimalChar, '.', regex=False)
     if not bareNumber:
-        number = r"(nan|-?inf|-?[0-9\.]+(?:e[+-]?[0-9\.]+)?)"
-        x = x.str.lower().str.extract(number, expand=False)
-    try:
-        return x.astype(float)
-    except ValueError as e:
-        return type_or_format_error(message=str(e), type='number')
+        pattern = r"([+-]?(?:nan|inf(?:inity)?|(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:e[+-]?[0-9]+)?))"
+        x = x.str.extract(pattern, expand=False, flags=re.IGNORECASE)
+    parsed = x.apply(_parse_number)
+    # HACK: Use 'NULL' to distinguish values parsed as NaN from parsing failures
+    # Use isin (not ==) to avoid warning that elementwise comparison failed
+    unparsed = parsed.isin(['NULL'])
+    invalid = ~x.isna() & unparsed
+    if invalid.any():
+        invalids = x[invalid].unique().tolist()
+        return type_or_format_error(type='number', values=invalids)
+    # Replace 'NULL' with NaN
+    return parsed.where(~unparsed).astype(float)
 
 def parse_integer(x: pd.Series, bareNumber: bool = True) -> Union[pd.Series, goodtables.Error]:
     oid = id(x)

@@ -1,7 +1,7 @@
 import pandas as pd
 
 import goodtables
-from goodtables_pandas.parse import parse_string
+from goodtables_pandas.parse import parse_string, parse_number
 
 def test_parses_string():
     x = pd.Series(['', 'a', 'nan', float('nan')])
@@ -132,3 +132,123 @@ def test_rejects_invalid_uuid() -> None:
     ])
     error = parse_string(x, format='email')
     pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions['values']))
+
+def test_parses_valid_number() -> None:
+    df = pd.DataFrame([
+        ('nan', float('nan')),
+        ('+nan', float('nan')),
+        ('-nan', float('nan')),
+        ('NaN', float('nan')),
+        ('inf', float('inf')),
+        ('+inf', float('inf')),
+        ('-inf', float('-inf')),
+        ('INF', float('inf')),
+        # NOTE: Python supports 'infinity', Table Schema only supports 'inf'
+        # https://docs.python.org/3.8/library/decimal.html
+        ('infinity', float('inf')),
+        ('1', 1.0),
+        ('+1', 1.0),
+        ('-1', -1.0),
+        ('01', 1.0),
+        ('-01', -1.0),
+        ('1.', 1),
+        ('1.000', 1.0),
+        ('1.23', 1.23),
+        ('+1.23', 1.23),
+        ('-1.23', -1.23),
+        ('.1', 0.1),
+        ('+.1', 0.1),
+        ('-.1', -0.1),
+        ('1e2', 1e2),
+        ('1E2', 1e2),
+        ('+1e2', 1e2),
+        ('-1e2', -1e2),
+        ('1e2', 1e2),
+        ('1e+2', 1e2),
+        ('1e-2', 1e-2),
+        ('.1e2', .1e2),
+        ('1.e2', 1e2),
+        ('1.2e2', 1.2e2),
+        ('0e2', 0e2),
+        ('1e23', 1e23),
+    ])
+    pd.testing.assert_series_equal(parse_number(df[0]), df[1], check_names=False)
+
+def test_rejects_invalid_number() -> None:
+    x = pd.Series([
+        'NA',
+        'nan1',
+        '++1',
+        '--1',
+        '1+',
+        '1e2+1',
+        'e2',
+        '1e'
+    ])
+    error = parse_number(x)
+    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions['values']))
+
+def test_parses_valid_number_with_custom_characters() -> None:
+    df = pd.DataFrame([
+        ('1 234', 1234.0),
+        ('1 234,56', 1234.56),
+        ('1 234 567,89', 1234567.89),
+        ('1,23', 1.23),
+        ('+1,23', 1.23),
+        ('-1,23', -1.23),
+        (',1', 0.1),
+        ('+,1', 0.1),
+        ('-,1', -0.1),
+        (',1e2', .1e2),
+    ])
+    parsed = parse_number(df[0], decimalChar=',', groupChar=' ')
+    pd.testing.assert_series_equal(parsed, df[1], check_names=False)
+    df = pd.DataFrame([
+        ('1,,234', 1234.0),
+        ('1,,234..56', 1234.56),
+        ('1,,234,,567..89', 1234567.89),
+        ('1..23', 1.23),
+        ('+1..23', 1.23),
+        ('-1..23', -1.23),
+        ('..1', 0.1),
+        ('+..1', 0.1),
+        ('-..1', -0.1),
+        ('..1e2', .1e2),
+    ])
+    parsed = parse_number(df[0], decimalChar='..', groupChar=',,')
+    pd.testing.assert_series_equal(parsed, df[1], check_names=False)
+
+def test_parses_valid_number_with_text():
+    df = pd.DataFrame([
+        ('$nan', float('nan')),
+        ('EUR NaN', float('nan')),
+        ('inf%', float('inf')),
+        ('€INF', float('inf')),
+        ('$Inf', float('inf')),
+        ('EUR -inf', float('-inf')),
+        ('-INF %', float('-inf')),
+        ('€-Inf', float('-inf')),
+        ('$1+', 1.0),
+        ('$+1', 1.0),
+        ('-1 USD ', -1.0),
+        ('1.23%', 1.23),
+        ('EUR +1.23', 1.23),
+        ('$ -1.23 USD', -1.23),
+        ('.1%', 0.1),
+        ('Total: +.1', 0.1),
+        ('** -.1 **', -0.1),
+        ('$1e2', 1e2),
+        ('1E2%', 1e2),
+        ('$ +1e2 USD', 1e2),
+        ('Total: -1e2', -1e2),
+        ('1e2%', 1e2),
+        ('EUR 1e+2', 1e2),
+        ('E1e-2', 1e-2),
+        ('.1e2E', .1e2),
+        ('E 0e2.1', 0e2),
+        ('E 0e2-1', 0e2),
+        ('E 0e2+1', 0e2),
+        ('1e23E', 1e23),
+    ])
+    parsed = parse_number(df[0], bareNumber=False)
+    pd.testing.assert_series_equal(parsed, df[1], check_names=False)
