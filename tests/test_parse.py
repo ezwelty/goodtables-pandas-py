@@ -2,7 +2,7 @@ import goodtables
 import pandas as pd
 import pytest
 
-from goodtables_pandas.parse import parse_string, parse_number, parse_integer, parse_boolean, parse_date
+from goodtables_pandas.parse import parse_string, parse_number, parse_integer, parse_boolean, parse_date, parse_datetime
 
 def test_parses_string():
     x = pd.Series(['', 'a', 'nan', float('nan')])
@@ -368,3 +368,41 @@ def test_parses_valid_outofrange_dates() -> None:
         ('2263-12-31', datetime.date(2263, 12, 31))
     ])
     assert (parsed == df[1]).all()
+
+def test_parses_valid_datetime() -> None:
+    df = pd.DataFrame([
+        ('2010-01-01T01:02:03Z', pd.Timestamp(2010, 1, 1, 1, 2, 3).tz_localize(0)),
+        ('2020-12-31T12:34:56Z', pd.Timestamp(2020, 12, 31, 12, 34, 56).tz_localize(0)),
+    ])
+    parsed = parse_datetime(df[0])
+    pd.testing.assert_series_equal(parsed, df[1], check_names=False)
+    parsed = parse_datetime(df[0], format='%Y-%m-%dT%H:%M:%S%z')
+    pd.testing.assert_series_equal(parsed, df[1], check_names=False)
+    df = pd.DataFrame([
+        ('01/01/10 01:02:03', pd.Timestamp(2010, 1, 1, 1, 2, 3)),
+        ('31/12/20 12:34:56', pd.Timestamp(2020, 12, 31, 12, 34, 56)),
+    ])
+    parsed = parse_date(df[0], format='%d/%m/%y %H:%M:%S')
+    pd.testing.assert_series_equal(parsed, df[1], check_names=False)
+
+def test_rejects_invalid_datetime() -> None:
+    x = pd.Series([
+        '2010-02-29T00:00:00Z', # non-existent leap year
+        '2020-12-32T00:00:00Z', # day out of range
+        '2020-13-31T00:00:00Z', # month out of range
+        '2020-00-31T00:00:00Z', # zero month
+        '2020-12-00T00:00:00Z', # zero day
+        '31/12/20T00:00:00Z', # wrong format
+        '2020-12-31T24:00:00Z', # hour out of range
+        '2020-12-31T00:60:00Z', # minute out of range
+    ])
+    error = parse_datetime(x)
+    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions['values']))
+
+@pytest.mark.xfail(reason='pd.Timestamp wraps seconds > 59')
+def test_rejects_datetime_with_outofrange_seconds() -> None:
+    x = pd.Series([
+        '2020-12-31T00:00:61Z', # second out of range 
+    ])
+    error = parse_datetime(x)
+    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions['values']))

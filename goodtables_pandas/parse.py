@@ -222,9 +222,12 @@ def parse_date(x: pd.Series, format: str = 'default') -> Union[pd.Series, goodta
     """
     Parse strings as dates.
 
+    Because :class:`pd.Timestamp` is used, dates are limited to the range 1677 - 2262
+    (https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#timestamp-limitations).
+
     Arguments:
         x: Strings.
-        format: Either 'default' (ISO8601 format `YYY-MM-DD`), 'any' (attempt to guess),
+        format: Either 'default' (ISO8601: `YYY-MM-DD`), 'any' (guess),
             or a pattern compatible with :meth:`datetime.datetime.strptime`.
 
     Returns:
@@ -240,7 +243,21 @@ def parse_date(x: pd.Series, format: str = 'default') -> Union[pd.Series, goodta
     return parsed
 
 def parse_datetime(x: pd.Series, format: str = 'default') -> Union[pd.Series, goodtables.Error]:
-    patterns = {'default': '%Y-%m-%dT%H:%M:%SZ', 'any': None}
+    """
+    Parse strings as datetimes.
+
+    Because :class:`pd.Timestamp` is used, dates are limited to the range 1677 - 2262
+    (https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#timestamp-limitations).
+
+    Arguments:
+        x: Strings.
+        format: Either 'default' (ISO8601: `YYY-MM-DDThh:mm:ssZ`), 'any' (guess),
+            or a pattern compatible with :meth:`datetime.datetime.strptime`.
+
+    Returns:
+        Either parsed datetimes (as :class:`pd.Timestamp`) or a parsing error.
+    """
+    patterns = {'default': '%Y-%m-%dT%H:%M:%S%z', 'any': None}
     pattern = patterns.get(format, format)
     parsed = pd.to_datetime(x, errors='coerce', format=pattern, infer_datetime_format=pattern is None)
     invalid = ~x.isna() & parsed.isna()
