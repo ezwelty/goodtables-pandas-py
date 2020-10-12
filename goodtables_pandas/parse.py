@@ -1,4 +1,5 @@
 import datetime
+import re
 from typing import Any, Iterable, List, Literal, Union
 
 import goodtables
@@ -44,16 +45,42 @@ def parse_field_constraint(x: Union[str, int, float, bool, list], constraint: st
 # ---- Field parsers ----
 
 def parse_string(x: pd.Series, format: Literal['default', 'email', 'uri', 'binary', 'uuid'] = 'default') -> Union[pd.Series, goodtables.Error]:
+    """
+    Parse field values as string.
+
+    Email (https://en.wikipedia.org/wiki/Email_address#Syntax):
+    The local part is limited to 64 characters. It may contain characters `a-z`, `A-Z`,
+    `0-9`, `!#$%&'*+-/=?^_`{|}~`, and `.` if it is not first, last, or appearing
+    consecutively (`..`). The DNS labels in the domain name are limited to 63 characters
+    each. They may contain characters `a-z`, `A-Z`, `0-9`, and `-` if it is not first or
+    last. Comments, IP address literals, quoted local parts, and internationalized
+    domain names are not currently supported.
+
+    Uniform Resource Identifier (https://en.wikipedia.org/wiki/Uniform_Resource_Identifier):
+    The scheme must start with a letter (`a-zA-Z`) and may contain characters `a-z`,
+    `A-Z`, `0-9`, and `+.-`. It must be followed by `:`, optionally `//`, and one or
+    more non-whitespace characters. No additional validation is performed.
+
+    Base64 string-encoded binary (https://en.wikipedia.org/wiki/Base64):
+    Blocks of four characters (`a-z`, `A-Z`, `0-9`, and `+/`)
+    padded with `=` to ensure the last block contains four characters.
+    Whitespace is ignored, per RFC 4648 (https://www.ietf.org/rfc/rfc4648.txt).
+
+    Universally unique identifier (https://en.wikipedia.org/wiki/Universally_unique_identifier#Format):
+    Blocks of characters `a-f`, `A-F`, and `0-9` of length, 8, 4, 4, 4, 12, separated by `-`.
+
+    Arguments:
+        x: Field values.
+        format: String format.
+
+    Returns:
+        Either the parsed field values or an error.
+    """
     patterns = {
-        # https://emailregex.com/
-        'email': r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$",
-        # https://en.wikipedia.org/wiki/Uniform_Resource_Identifier
-        # https://www.regextester.com/94092
-        'uri': r"^\w+:(\/?\/?)[^\s]+$",
-        # https://stackoverflow.com/questions/475074/regex-to-parse-or-validate-base64-data
-        'binary': r"[^-A-Za-z0-9+/=]|=[^=]|={3,}$",
-        # https://en.wikipedia.org/wiki/Universally_unique_identifier
-        'uuid': r"[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}"
+        'email': r"^(?=[^@]{1,64}@)[a-z0-9!#$%&'\*\+\-\/=\?\^_`{|}~]+(?:\.[a-z0-9!#$%&'\*\+\-\/=\?\^_`{|}~]+)*@(?=[^.]{1,63}(?:\.|$))[a-z0-9]+(?:\-[a-z0-9]+)*(?:\.(?=[^.]{1,63}(?:\.|$))[a-z0-9]+(?:\-[a-z0-9]+)*)+$",
+        'uri': r"^[a-z][a-z0-9+.-]*:(?:\/\/[^\s]+|[^\s\/][^\s]*)$",
+        'binary': r"^(?:[a-z0-9+\/]{4})*(?:[a-z0-9+\/]{2}==|[a-z0-9+\/]{3}=)?$",
+        'uuid': r"^[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}$"
     }
     pattern = patterns.get(format)
     if pattern:
