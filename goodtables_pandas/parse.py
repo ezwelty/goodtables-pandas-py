@@ -96,9 +96,9 @@ def parse_string(x: pd.Series, format: Literal['default', 'email', 'uri', 'binar
 
 def parse_number(x: pd.Series, decimalChar: str = '.', groupChar: str = None, bareNumber: bool = True) -> Union[pd.Series, goodtables.Error]:
     if groupChar:
-        x = x.str.replace(groupChar, '')
+        x = x.str.replace(groupChar, '', regex=False)
     if decimalChar != '.':
-        x = x.str.replace(decimalChar, '.')
+        x = x.str.replace(decimalChar, '.', regex=False)
     if not bareNumber:
         number = r"(nan|-?inf|-?[0-9\.]+(?:e[+-]?[0-9\.]+)?)"
         x = x.str.lower().str.extract(number, expand=False)
