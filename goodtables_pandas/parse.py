@@ -102,7 +102,18 @@ def parse_string(x: pd.Series, format: Literal['default', 'email', 'uri', 'binar
                 values=x[invalid].dropna().unique().tolist())
     return x
 
-def _parse_number(xi: str) -> Union[float, str]:
+_NUMBER_PATTERN = re.compile(r"([+-]?(?:nan|inf(?:inity)?|(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:e[+-]?[0-9]+)?))", flags=re.IGNORECASE)
+
+def _extract_number(xi: Union[str, float]) -> str:
+  try:
+    parts = _NUMBER_PATTERN.findall(xi)
+    if len(parts) == 1:
+      return _parse_number(parts[0])
+    return 'NULL'
+  except TypeError:
+    return 'NULL'
+
+def _parse_number(xi: Union[str, float]) -> Union[float, str]:
     try:
         return float(xi)
     except ValueError:
@@ -129,10 +140,10 @@ def parse_number(x: pd.Series, decimalChar: str = '.', groupChar: str = None, ba
         parsed = parsed.str.replace(groupChar, '', regex=False)
     if decimalChar != '.':
         parsed = parsed.str.replace(decimalChar, '.', regex=False)
-    if not bareNumber:
-        pattern = r"([+-]?(?:nan|inf(?:inity)?|(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:e[+-]?[0-9]+)?))"
-        parsed = parsed.str.extract(pattern, expand=False, flags=re.IGNORECASE)
-    parsed = parsed.apply(_parse_number)
+    if bareNumber:
+        parsed = parsed.apply(_parse_number, convert_dtype=False)
+    else:
+        parsed = parsed.apply(_extract_number, convert_dtype=False)
     # HACK: Use 'NULL' to distinguish values parsed as NaN from parsing failures
     # Use isin (not ==) to avoid warning that elementwise comparison failed
     unparsed = parsed.isin(['NULL'])
@@ -149,12 +160,12 @@ def _extract_integer(xi: Union[str, float]) -> Union[str, float]:
   try:
     parts = _INTEGER_PATTERN.findall(xi)
     if len(parts) == 1:
-      return parts[0]
+      return _parse_integer(parts[0])
     return np.nan
   except TypeError:
     return np.nan
 
-def _parse_integer(xi: str) -> Union[int, float]:
+def _parse_integer(xi: Union[str, float]) -> Union[int, float]:
     try:
         return int(xi)
     except ValueError:
@@ -172,9 +183,10 @@ def parse_integer(x: pd.Series, bareNumber: bool = True) -> Union[pd.Series, goo
         Either parsed integers or a parsing error.
     """
     parsed = x
-    if not bareNumber:
+    if bareNumber:
+        parsed = parsed.apply(_parse_integer, convert_dtype=False)
+    else:
         parsed = parsed.apply(_extract_integer, convert_dtype=False)
-    parsed = parsed.apply(_parse_integer, convert_dtype=False)
     invalid = ~x.isna() & parsed.isna()
     if invalid.any():
         invalids = x[invalid].unique().tolist()

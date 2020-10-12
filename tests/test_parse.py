@@ -245,13 +245,21 @@ def test_parses_valid_number_with_text():
         ('EUR 1e+2', 1e2),
         ('E1e-2', 1e-2),
         ('.1e2E', .1e2),
-        ('E 0e2.1', 0e2),
-        ('E 0e2-1', 0e2),
-        ('E 0e2+1', 0e2),
         ('1e23E', 1e23),
     ])
     parsed = parse_number(df[0], bareNumber=False)
     pd.testing.assert_series_equal(parsed, df[1], check_names=False)
+
+def test_rejects_ambiguous_number_with_text() -> None:
+    x = pd.Series([
+        '$nan inf',
+        'E 0e2.1',
+        'E 0e2-1',
+        'E 0e2+1',
+        '1e23E2'
+    ])
+    error = parse_number(x, bareNumber=False)
+    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions['values']))
 
 def test_parses_valid_integer() -> None:
     df = pd.DataFrame([
