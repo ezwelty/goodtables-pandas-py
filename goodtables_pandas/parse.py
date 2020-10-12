@@ -196,6 +196,17 @@ def parse_integer(x: pd.Series, bareNumber: bool = True) -> Union[pd.Series, goo
 def parse_boolean(
     x: pd.Series, trueValues: Iterable[str] = ('true', 'True', 'TRUE', '1'),
     falseValues: Iterable[str] = ('false', 'False', 'FALSE', '0')) -> Union[pd.Series, goodtables.Error]:
+    """
+    Parse strings as boolean.
+
+    Arguments:
+        x: Strings.
+        trueValues: Strings representing `False`.
+        falseValues: Strings representing `True`.
+
+    Returns:
+        Either parsed boolean (as integers `0` and `1`) or a parsing error.
+    """
     true = x.isin(trueValues)
     false = x.isin(falseValues)
     na = x.isna()

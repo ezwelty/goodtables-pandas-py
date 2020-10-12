@@ -1,7 +1,7 @@
 import pandas as pd
 
 import goodtables
-from goodtables_pandas.parse import parse_string, parse_number, parse_integer
+from goodtables_pandas.parse import parse_string, parse_number, parse_integer, parse_boolean
 
 def test_parses_string():
     x = pd.Series(['', 'a', 'nan', float('nan')])
@@ -308,4 +308,26 @@ def test_rejects_ambiguous_integer_with_text() -> None:
         '1 2',
     ])
     error = parse_integer(x, bareNumber=False)
+    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions['values']))
+
+def test_parses_valid_boolean() -> None:
+    trueValues = 'true', 'True', 'TRUE', '1'
+    falseValues = 'false', 'False', 'FALSE', '0'
+    df = pd.DataFrame({
+        0: trueValues + falseValues,
+        1: [True] * len(trueValues) + [False] * len(falseValues)
+    })
+    parsed = parse_boolean(df[0], trueValues=trueValues, falseValues=falseValues)
+    pd.testing.assert_series_equal(parsed, df[1].astype('Int64'), check_names=False)
+
+def test_rejects_invalid_boolean() -> None:
+    trueValues = 'true', 'True', 'TRUE', '1'
+    falseValues = 'false', 'False', 'FALSE', '0'
+    x = pd.Series([
+        '00',
+        'folse',
+        '01',
+        'TRUe',
+    ])
+    error = parse_boolean(x, trueValues=trueValues, falseValues=falseValues)
     pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions['values']))
