@@ -1,7 +1,7 @@
 import base64
 import datetime
 import re
-from typing import Any, Iterable, List, Literal, Union
+from typing import Any, Iterable, List, Literal, Optional, Union
 
 import goodtables
 import numpy as np
@@ -143,19 +143,23 @@ def parse_number(x: pd.Series, decimalChar: str = '.', groupChar: str = None, ba
     # Replace 'NULL' with NaN
     return parsed.where(~unparsed).astype(float)
 
-def parse_integer(x: pd.Series, bareNumber: bool = True) -> Union[pd.Series, goodtables.Error]:
-    oid = id(x)
-    if not bareNumber:
-        number = r"(-?[0-9]+)"
-        x = x.str.lower().str.extract(number, expand=False)
-    na = x.isna()
-    if id(x) == oid:
-        x = x.copy()
+def _parse_integer(xi: str) -> Optional[int]:
     try:
-        x[~na] = x[~na].astype(int)
-        return x.astype('Int64')
-    except ValueError as e:
-        return type_or_format_error(message=str(e), type='integer')
+        return int(xi)
+    except ValueError:
+        return None
+
+def parse_integer(x: pd.Series, bareNumber: bool = True) -> Union[pd.Series, goodtables.Error]:
+    parsed = x
+    if not bareNumber:
+        number = r"([+-]?[0-9]+)"
+        parsed = parsed.str.extract(number, expand=False)
+    parsed = parsed.apply(_parse_integer)
+    invalid = ~x.isna() & parsed.isna()
+    if invalid.any():
+        invalids = x[invalid].unique().tolist()
+        return type_or_format_error(type='integer', values=invalids)    
+    return parsed.astype('Int64')
 
 def parse_boolean(
     x: pd.Series, trueValues: Iterable[str] = ('true', 'True', 'TRUE', '1'),
