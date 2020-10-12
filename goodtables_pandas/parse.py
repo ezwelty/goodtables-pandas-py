@@ -46,7 +46,7 @@ def parse_field_constraint(x: Union[str, int, float, bool, list], constraint: st
 
 # ---- Field parsers ----
 
-def validate_string_binary(xi):
+def _validate_string_binary(xi):
   try:
     base64.b64decode(xi)
     return True
@@ -92,7 +92,7 @@ def parse_string(x: pd.Series, format: Literal['default', 'email', 'uri', 'binar
     }
     if format != 'default':
         if format == 'binary':
-            invalid = ~x.apply(validate_string_binary)
+            invalid = ~x.apply(_validate_string_binary)
         else:
             pattern = patterns[format]
             invalid = ~x.str.contains(pattern, flags=re.IGNORECASE)
