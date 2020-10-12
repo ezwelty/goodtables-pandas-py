@@ -57,7 +57,10 @@ def parse_string(x: pd.Series, format: Literal['default', 'email', 'uri', 'binar
     }
     pattern = patterns.get(format)
     if pattern:
-        invalid = ~x.str.contains(pattern)
+        if format == 'binary':
+            invalid = ~x.str.replace(r'\s', '').str.contains(pattern, flags=re.IGNORECASE)
+        else:
+            invalid = ~x.str.contains(pattern, flags=re.IGNORECASE)
         if invalid.any():
             return type_or_format_error(
                 type='string', format=format,
