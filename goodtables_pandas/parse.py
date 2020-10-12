@@ -1,3 +1,4 @@
+import base64
 import datetime
 import re
 from typing import Any, Iterable, List, Literal, Union
@@ -45,6 +46,13 @@ def parse_field_constraint(x: Union[str, int, float, bool, list], constraint: st
 
 # ---- Field parsers ----
 
+def validate_string_binary(xi):
+  try:
+    base64.b64decode(xi)
+    return True
+  except Exception:
+    return False
+
 def parse_string(x: pd.Series, format: Literal['default', 'email', 'uri', 'binary', 'uuid'] = 'default') -> Union[pd.Series, goodtables.Error]:
     """
     Parse field values as string.
@@ -80,14 +88,13 @@ def parse_string(x: pd.Series, format: Literal['default', 'email', 'uri', 'binar
     patterns = {
         'email': r"^(?=[^@]{1,64}@)[a-z0-9!#$%&'\*\+\-\/=\?\^_`{|}~]+(?:\.[a-z0-9!#$%&'\*\+\-\/=\?\^_`{|}~]+)*@(?=[^.]{1,63}(?:\.|$))[a-z0-9]+(?:\-[a-z0-9]+)*(?:\.(?=[^.]{1,63}(?:\.|$))[a-z0-9]+(?:\-[a-z0-9]+)*)+$",
         'uri': r"^[a-z][a-z0-9+.-]*:(?:\/\/[^\s]+|[^\s\/][^\s]*)$",
-        'binary': r"^(?:[a-z0-9+\/]{4})*(?:[a-z0-9+\/]{2}==|[a-z0-9+\/]{3}=)?$",
         'uuid': r"^[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}$"
     }
-    pattern = patterns.get(format)
-    if pattern:
+    if format != 'default':
         if format == 'binary':
-            invalid = ~x.str.replace(r'\s', '').str.contains(pattern, flags=re.IGNORECASE)
+            invalid = ~x.apply(validate_string_binary)
         else:
+            pattern = patterns[format]
             invalid = ~x.str.contains(pattern, flags=re.IGNORECASE)
         if invalid.any():
             return type_or_format_error(
