@@ -124,14 +124,15 @@ def parse_number(x: pd.Series, decimalChar: str = '.', groupChar: str = None, ba
     Returns:
         Either parsed numbers or a parsing error.
     """
+    parsed = x
     if groupChar:
-        x = x.str.replace(groupChar, '', regex=False)
+        parsed = parsed.str.replace(groupChar, '', regex=False)
     if decimalChar != '.':
-        x = x.str.replace(decimalChar, '.', regex=False)
+        parsed = parsed.str.replace(decimalChar, '.', regex=False)
     if not bareNumber:
         pattern = r"([+-]?(?:nan|inf(?:inity)?|(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:e[+-]?[0-9]+)?))"
-        x = x.str.extract(pattern, expand=False, flags=re.IGNORECASE)
-    parsed = x.apply(_parse_number)
+        parsed = parsed.str.extract(pattern, expand=False, flags=re.IGNORECASE)
+    parsed = parsed.apply(_parse_number)
     # HACK: Use 'NULL' to distinguish values parsed as NaN from parsing failures
     # Use isin (not ==) to avoid warning that elementwise comparison failed
     unparsed = parsed.isin(['NULL'])
