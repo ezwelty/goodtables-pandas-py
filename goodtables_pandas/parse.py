@@ -150,6 +150,16 @@ def _parse_integer(xi: str) -> Optional[int]:
         return None
 
 def parse_integer(x: pd.Series, bareNumber: bool = True) -> Union[pd.Series, goodtables.Error]:
+    """
+    Parse strings as integers.
+
+    Arguments:
+        x: Strings.
+        bareNumber: Whether the numbers are bare, or padded with non-numeric text.
+
+    Returns:
+        Either parsed integers or a parsing error.
+    """
     parsed = x
     if not bareNumber:
         number = r"([+-]?[0-9]+)"
