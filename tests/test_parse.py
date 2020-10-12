@@ -2,7 +2,7 @@ import goodtables
 import pandas as pd
 import pytest
 
-from goodtables_pandas.parse import parse_string, parse_number, parse_integer, parse_boolean, parse_date, parse_datetime
+from goodtables_pandas.parse import parse_string, parse_number, parse_integer, parse_boolean, parse_date, parse_datetime, parse_year
 
 def test_parses_string():
     x = pd.Series(['', 'a', 'nan', float('nan')])
@@ -405,4 +405,23 @@ def test_rejects_datetime_with_outofrange_seconds() -> None:
         '2020-12-31T00:00:61Z', # second out of range 
     ])
     error = parse_datetime(x)
+    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions['values']))
+
+def test_parses_valid_year() -> None:
+    df = pd.DataFrame([
+        ('2020', 2020),
+        ('0', 0), # allows year 0
+        ('-1', -1), # allows years < 0
+        ('10000', 10000), # allows years > 9999
+    ])
+    parsed = parse_year(df[0])
+    pd.testing.assert_series_equal(parsed, df[1].astype('Int64'), check_names=False)
+
+def test_rejects_invalid_year() -> None:
+    x = pd.Series([
+        'nan',
+        'x',
+        '1.2',
+    ])
+    error = parse_year(x)
     pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions['values']))

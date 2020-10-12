@@ -205,7 +205,7 @@ def parse_boolean(
         falseValues: Strings representing `True`.
 
     Returns:
-        Either parsed boolean (as integers `0` and `1`) or a parsing error.
+        Either parsed boolean (as :class:`pd.Int64Dtype`) or a parsing error.
     """
     true = x.isin(trueValues)
     false = x.isin(falseValues)
@@ -267,15 +267,25 @@ def parse_datetime(x: pd.Series, format: str = 'default') -> Union[pd.Series, go
     return parsed
 
 def parse_year(x: pd.Series) -> Union[pd.Series, goodtables.Error]:
-    na = x.isna()
-    x = x.copy()
-    try:
-        # NOTE: Does not permit timezone specification
-        # https://www.w3.org/TR/xmlschema-2/#timeZonePermited
-        x[~na] = x[~na].astype(int)
-        return x.astype('Int64')
-    except ValueError as e:
-        return type_or_format_error(message=str(e), type='year')
+    """
+    Parse strings as years.
+
+    Per XML Schema, permits negative years and years greater than 9999.
+    However, time zones are not supported
+    (https://www.w3.org/TR/xmlschema-2/#timeZonePermited).
+
+    Arguments:
+        x: Strings.
+
+    Returns:
+        Either parsed years (as :class:`pd.Int64Dtype`) or a parsing error.
+    """
+    parsed = x.apply(_extract_integer, convert_dtype=False)
+    invalid = ~x.isna() & parsed.isna()
+    if invalid.any():
+        invalids = x[invalid].unique().tolist()
+        return type_or_format_error(type='year', values=invalids)    
+    return parsed.astype('Int64')
 
 def parse_geopoint(x: pd.Series, format: Literal['default', 'array', 'object'] = 'default') -> Union[pd.Series, goodtables.Error]:
     mask = ~x.isna()
