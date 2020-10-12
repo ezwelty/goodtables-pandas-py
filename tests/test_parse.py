@@ -1,7 +1,8 @@
-import pandas as pd
-
 import goodtables
-from goodtables_pandas.parse import parse_string, parse_number, parse_integer, parse_boolean
+import pandas as pd
+import pytest
+
+from goodtables_pandas.parse import parse_string, parse_number, parse_integer, parse_boolean, parse_date
 
 def test_parses_string():
     x = pd.Series(['', 'a', 'nan', float('nan')])
@@ -331,3 +332,39 @@ def test_rejects_invalid_boolean() -> None:
     ])
     error = parse_boolean(x, trueValues=trueValues, falseValues=falseValues)
     pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions['values']))
+
+def test_parses_valid_date() -> None:
+    df = pd.DataFrame([
+        ('2010-01-01', pd.Timestamp(2010, 1, 1)),
+        ('2020-12-31', pd.Timestamp(2020, 12, 31)),
+    ])
+    parsed = parse_date(df[0])
+    pd.testing.assert_series_equal(parsed, df[1], check_names=False)
+    parsed = parse_date(df[0], format='%Y-%m-%d')
+    pd.testing.assert_series_equal(parsed, df[1], check_names=False)
+    df = pd.DataFrame([
+        ('01/01/10', pd.Timestamp(2010, 1, 1)),
+        ('31/12/20', pd.Timestamp(2020, 12, 31)),
+    ])
+    parsed = parse_date(df[0], format='%d/%m/%y')
+    pd.testing.assert_series_equal(parsed, df[1], check_names=False)
+
+def test_rejects_invalid_date() -> None:
+    x = pd.Series([
+        '2010-02-29', # non-existent leap year
+        '2020-12-32', # day out of range
+        '2020-13-31', # month out of range
+        '2020-00-31', # zero month
+        '2020-12-00', # zero day
+        '31/12/20', # wrong format
+    ])
+    error = parse_date(x)
+    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions['values']))
+
+@pytest.mark.xfail(reason='pd.Timestamp is limited to ~584 year range')
+def test_parses_valid_outofrange_dates() -> None:
+    df = pd.DataFrame([
+        ('1676-01-01', datetime.date(1676, 1, 1)),
+        ('2263-12-31', datetime.date(2263, 12, 31))
+    ])
+    assert (parsed == df[1]).all()

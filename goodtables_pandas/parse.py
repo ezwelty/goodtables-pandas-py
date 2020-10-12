@@ -219,9 +219,20 @@ def parse_boolean(
     return x
 
 def parse_date(x: pd.Series, format: str = 'default') -> Union[pd.Series, goodtables.Error]:
+    """
+    Parse strings as dates.
+
+    Arguments:
+        x: Strings.
+        format: Either 'default' (ISO8601 format `YYY-MM-DD`), 'any' (attempt to guess),
+            or a pattern compatible with :meth:`datetime.datetime.strptime`.
+
+    Returns:
+        Either parsed dates (as :class:`pd.Timestamp`) or a parsing error.
+    """
     patterns = {'default': '%Y-%m-%d', 'any': None}
     pattern = patterns.get(format, format)
-    parsed = pd.to_datetime(x, errors='coerce', format=pattern, infer_datetime_format=True)
+    parsed = pd.to_datetime(x, errors='coerce', format=pattern, infer_datetime_format=pattern is None)
     invalid = ~x.isna() & parsed.isna()
     if invalid.any():
         invalids = x[invalid].unique().tolist()
@@ -231,7 +242,7 @@ def parse_date(x: pd.Series, format: str = 'default') -> Union[pd.Series, goodta
 def parse_datetime(x: pd.Series, format: str = 'default') -> Union[pd.Series, goodtables.Error]:
     patterns = {'default': '%Y-%m-%dT%H:%M:%SZ', 'any': None}
     pattern = patterns.get(format, format)
-    parsed = pd.to_datetime(x, errors='coerce', format=pattern, infer_datetime_format=True)
+    parsed = pd.to_datetime(x, errors='coerce', format=pattern, infer_datetime_format=pattern is None)
     invalid = ~x.isna() & parsed.isna()
     if invalid.any():
         invalids = x[invalid].unique().tolist()
