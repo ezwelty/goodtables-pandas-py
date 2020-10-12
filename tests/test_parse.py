@@ -1,7 +1,7 @@
 import pandas as pd
 
 import goodtables
-from goodtables_pandas.parse import parse_string, parse_number
+from goodtables_pandas.parse import parse_string, parse_number, parse_integer
 
 def test_parses_string():
     x = pd.Series(['', 'a', 'nan', float('nan')])
@@ -252,3 +252,44 @@ def test_parses_valid_number_with_text():
     ])
     parsed = parse_number(df[0], bareNumber=False)
     pd.testing.assert_series_equal(parsed, df[1], check_names=False)
+
+def test_parses_valid_integer() -> None:
+    df = pd.DataFrame([
+        ('1', 1),
+        ('+1', 1),
+        ('-1', -1),
+        ('001', 1),
+        ('1234', 1234)
+    ])
+    parsed = parse_integer(df[0])
+    pd.testing.assert_series_equal(parsed, df[1].astype('Int64'), check_names=False)
+
+def test_rejects_invalid_integer() -> None:
+    x = pd.Series([
+        '1+',
+        '1-',
+        '1.23',
+        '1.',
+        '1.0',
+        '++1',
+        'nan',
+        'inf',
+    ])
+    error = parse_integer(x)
+    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions['values']))
+
+def test_parses_valid_integer_with_text() -> None:
+    df = pd.DataFrame([
+        ('$1+', 1),
+        ('$+1', 1),
+        ('-1 USD ', -1),
+        ('123%', 123),
+        ('EUR +123', 123),
+        ('$ -123 USD', -123),
+        ('Total: +1', 1),
+        ('** -1 **', -1),
+        ('$1e2', 1),
+        ('1E2%', 1),
+    ])
+    parsed = parse_integer(df[0], bareNumber=False)
+    pd.testing.assert_series_equal(parsed, df[1].astype('Int64'), check_names=False)
