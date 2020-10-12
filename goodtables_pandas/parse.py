@@ -61,7 +61,7 @@ def parse_string(x: pd.Series, format: Literal['default', 'email', 'uri', 'binar
         if invalid.any():
             return type_or_format_error(
                 type='string', format=format,
-                values=invalid.dropna().unique().tolist())
+                values=x[invalid].dropna().unique().tolist())
     return x
 
 def parse_number(x: pd.Series, decimalChar: str = '.', groupChar: str = None, bareNumber: bool = True) -> Union[pd.Series, goodtables.Error]:
