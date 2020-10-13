@@ -2,7 +2,7 @@ import goodtables
 import pandas as pd
 import pytest
 
-from goodtables_pandas.parse import parse_string, parse_number, parse_integer, parse_boolean, parse_date, parse_datetime, parse_year, parse_geopoint
+from goodtables_pandas.parse import parse_string, parse_number, parse_integer, parse_boolean, parse_date, parse_datetime, parse_year, parse_geopoint, parse_field
 
 def test_parses_string():
     x = pd.Series(['', 'a', 'nan', float('nan')])
@@ -507,3 +507,40 @@ def test_rejects_invalid_geopoint_object() -> None:
     ])
     error = parse_geopoint(x, format='object')
     pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions['values']))
+
+@pytest.mark.parametrize('x, field, dtype', [
+    ('string', {'type': 'string'}, 'O'),
+    ('foo@bar.com', {'type': 'string', 'format': 'email'}, 'O'),
+    ('https://foo.bar', {'type': 'string', 'format': 'uri'}, 'O'),
+    ('YW55', {'type': 'string', 'format': 'binary'}, 'O'),
+    ('00000000-0000-0000-0000-000000000000', {'type': 'string', 'format': 'uuid'}, 'O'),
+    ('1.0', {'type': 'number'}, 'float64'),
+    ('1,0', {'type': 'number', 'decimalChar': ','}, 'float64'),
+    ('1 000', {'type': 'number', 'groupChar': ' '}, 'float64'),
+    ('$1', {'type': 'number', 'bareNumber': False}, 'float64'),
+    ('1', {'type': 'integer'}, 'Int64'),
+    ('$1', {'type': 'integer', 'bareNumber': False}, 'Int64'),
+    ('true', {'type': 'boolean'}, 'Int64'),
+    ('2020-12-31', {'type': 'date'}, 'datetime64[ns]'),
+    ('2020/12/31', {'type': 'date', 'format': 'any'}, 'datetime64[ns]'),
+    ('2020/12/31', {'type': 'date', 'format': '%Y/%m/%d'}, 'datetime64[ns]'),
+    # Skip type:datetime, format:default - datetime64[ns, UTC], but NaN datetime64[ns]
+    ('2020/12/31 00:00:00', {'type': 'datetime', 'format': 'any'}, 'datetime64[ns]'),
+    ('2020/12/31 00:00:00', {'type': 'datetime', 'format': '%Y/%m/%d %H:%M:%S'}, 'datetime64[ns]'),
+    ('2020', {'type': 'year'}, 'Int64'),
+    ('0, 1', {'type': 'geopoint'}, 'O'),
+    ('[0, 1]', {'type': 'geopoint', 'format': 'array'}, 'O'),
+    ('{"lon": 0, "lat": 1}', {'type': 'geopoint', 'format': 'object'}, 'O'),
+])
+def test_propagates_null_and_maintains_dtype(x: str, field: str, dtype: str) -> None:
+    print(field)
+    # null only
+    parsed = parse_field(pd.Series([float('nan')], dtype=str), **field)
+    assert isinstance(parsed, pd.Series)
+    assert parsed.isna().all()
+    assert parsed.dtype == dtype
+    # mixed
+    parsed = parse_field(pd.Series([x, float('nan')], dtype=str), **field)
+    assert isinstance(parsed, pd.Series)
+    assert parsed[1:].isna().all()
+    assert parsed.dtype == dtype
