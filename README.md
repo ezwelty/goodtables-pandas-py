@@ -19,7 +19,7 @@ report = goodtables.validate(source='datapackage.json')
 
 ### Limitations
 
-- Only fields of type `string`, `number`, `integer`, and `boolean` are currently supported. Other types can easily be supported with additional `parse_*` functions in `parse.py`.
+- Only fields of type `string`, `number`, `integer`, `boolean`, `date`, `datetime`, `year`, and `geopoint` are currently supported. Other types can easily be supported with additional `parse_*` functions in `parse.py`.
 - Memory use could be greatly minimized by reading, parsing, and checking tables in chunks (using `pandas.read_csv(chunksize=)`), and storing only field values for unique and foreign key checks.
 
 ### Uniqueness of `null`
