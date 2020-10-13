@@ -287,7 +287,7 @@ def parse_year(x: pd.Series) -> Union[pd.Series, goodtables.Error]:
         return type_or_format_error(type='year', values=invalids)    
     return parsed.astype('Int64')
 
-_GEOPOINT_PATTERN_DEFAULT = re.compile(r'^(.+), ?(.+)$')
+_GEOPOINT_PATTERN_DEFAULT = re.compile(r'^([^, ]+), ?([^ ]+)$')
 
 def _extract_geopoint_default(xi: str) -> Union[Tuple[float, float], float]:
     parts = _GEOPOINT_PATTERN_DEFAULT.findall(xi)
@@ -320,6 +320,24 @@ def _extract_geopoint_object(xi: str) -> Union[Tuple[float, float], float]:
         return np.nan
 
 def parse_geopoint(x: pd.Series, format: Literal['default', 'array', 'object'] = 'default') -> Union[pd.Series, goodtables.Error]:
+    """
+    Parse strings as geopoints.
+
+    Per XML Schema, permits negative years and years greater than 9999.
+    However, time zones are not supported
+    (https://www.w3.org/TR/xmlschema-2/#timeZonePermited).
+
+    Arguments:
+        x: Strings.
+        format: Either 'default' ('<lon>,<lat>' or '<lon>, <lat>'),
+            'array' ('[<lon>, <lat>]', whitespace-insensitive), or
+            'object' ('{"lon": <lon>, "lat": <lat>}' or '{"lat": <lat>, "lon": <lon>}',
+            whitespace-insensitive),
+            where `<lon>` and `<lat>` are any values accepted by :class:`float`.
+
+    Returns:
+        Either parsed geopoints (as :class:`tuple`: lon, lat) or a parsing error.
+    """
     mask = ~x.isna()
     functions = {
         'default': _extract_geopoint_default,

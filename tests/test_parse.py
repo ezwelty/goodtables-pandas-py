@@ -2,7 +2,7 @@ import goodtables
 import pandas as pd
 import pytest
 
-from goodtables_pandas.parse import parse_string, parse_number, parse_integer, parse_boolean, parse_date, parse_datetime, parse_year
+from goodtables_pandas.parse import parse_string, parse_number, parse_integer, parse_boolean, parse_date, parse_datetime, parse_year, parse_geopoint
 
 def test_parses_string():
     x = pd.Series(['', 'a', 'nan', float('nan')])
@@ -424,4 +424,86 @@ def test_rejects_invalid_year() -> None:
         '1.2',
     ])
     error = parse_year(x)
+    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions['values']))
+
+def test_parses_valid_geopoint() -> None:
+    df = pd.DataFrame([
+        ('0.1, 2.3', (0.1, 2.3)),
+        ('0.1,2.3', (0.1, 2.3)), # no space after comma
+        ('0, 1', (0.0, 1.0)), # integer coordinates
+        ('-0.1, -2.3', (-0.1, -2.3)), # negative coordinates
+        # special values (NOTE: invalid?)
+        ('Infinity, NaN', (float('inf'), float('nan'))), # works in json.loads(lon|lat)
+        ('inf, nan', (float('inf'), float('nan'))), # fails in json.loads(lon|lat)
+    ])
+    parsed = parse_geopoint(df[0])
+    pd.testing.assert_series_equal(parsed, df[1], check_names=False)
+
+def test_rejects_invalid_geopoint() -> None:
+    x = pd.Series([
+        '0,  1', # two spaces after comma (NOTE: valid?)
+        ' 0, 1 ', # leading/trailing whitespace (NOTE: valid?)
+        '0, 1, 2', # too many coordinates
+        '0', # too few coordinates
+        'x, y', # non-numeric coordinates
+    ])
+    error = parse_geopoint(x)
+    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions['values']))
+
+def test_parses_valid_geopoint_array() -> None:
+    df = pd.DataFrame([
+        ('[0.1, 2.3]', (0.1, 2.3)),
+        ('[0.1,2.3]', (0.1, 2.3)), # no space after comma
+        (' [0.1, 2.3] ', (0.1, 2.3)), # trailing/leading white space
+        ('[0.1,  2.3]', (0.1, 2.3)), # two spaces after comma
+        ('[0, 1]', (0.0, 1.0)), # integer coordinates
+        ('[-0.1, -2.3]', (-0.1, -2.3)), # negative coordinates
+        # special values (NOTE: invalid?)
+        ('[Infinity, NaN]', (float('inf'), float('nan'))), # works in json.loads()
+        ('[inf, nan]', (float('inf'), float('nan'))), # fails in json.loads()
+    ])
+    parsed = parse_geopoint(df[0], format='array')
+    pd.testing.assert_series_equal(parsed, df[1], check_names=False)
+
+def test_rejects_invalid_geopoint_array() -> None:
+    x = pd.Series([
+        '[0, 1, 2]', # too many coordinates
+        '[0]', # too few coordinates
+        '[x, y]', # non-numeric coordinates
+        'x, y]', # missing left bracket
+        '[x, y', # missing right bracket
+        'x, y', # missing brackets
+    ])
+    error = parse_geopoint(x, format='array')
+    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions['values']))
+
+def test_parses_valid_geopoint_object() -> None:
+    df = pd.DataFrame([
+        ('{"lon": 0.1, "lat": 2.3}', (0.1, 2.3)),
+        ('{"lat": 2.3, "lon": 0.1}', (0.1, 2.3)), # lat, then lon
+        ('{"lon": 0.1,"lat": 2.3}', (0.1, 2.3)), # no space after comma
+        (' {"lon": 0.1, "lat": 2.3} ', (0.1, 2.3)), # trailing/leading white space
+        ('{"lon": 0.1,  "lat": 2.3}', (0.1, 2.3)), # two spaces after comma
+        ('{"lon": 0, "lat": 1}', (0.0, 1.0)), # integer coordinates
+        ('{"lon": -0.1, "lat": -2.3}', (-0.1, -2.3)), # negative coordinates
+        # special values (NOTE: invalid?)
+        ('{"lon": Infinity, "lat": NaN}', (float('inf'), float('nan'))), # works in json.loads()
+        ('{"lon": inf, "lat": nan}', (float('inf'), float('nan'))), # fails in json.loads()
+    ])
+    parsed = parse_geopoint(df[0], format='object')
+    pd.testing.assert_series_equal(parsed, df[1], check_names=False)
+
+def test_rejects_invalid_geopoint_object() -> None:
+    x = pd.Series([
+        '{"lon": 0, "lat": 1, "z": 2}', # too many coordinates
+        '{"lon": 0}', # too few coordinates
+        '{"lon": x, "lat": y}', # non-numeric coordinates
+        '{"lon": "x", "lat": "y"}', # non-numeric coordinates
+        '{"LON": 0, "LAT": 1}', # wrong key case
+        '{"longitude": 0, "latitude": 1}', # wrong keys
+        '[0, 1]', # array format
+        '0, 1', # default format
+        '{"lon": 0, "lat": 1', # missing right brace
+    ])
+    error = parse_geopoint(x, format='object')
     pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions['values']))
