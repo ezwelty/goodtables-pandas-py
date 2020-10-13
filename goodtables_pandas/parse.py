@@ -1,7 +1,7 @@
 import base64
 import datetime
 import re
-from typing import Any, Iterable, List, Literal, Union
+from typing import Any, Iterable, List, Literal, Tuple, Union
 
 import goodtables
 import numpy as np
@@ -287,20 +287,48 @@ def parse_year(x: pd.Series) -> Union[pd.Series, goodtables.Error]:
         return type_or_format_error(type='year', values=invalids)    
     return parsed.astype('Int64')
 
+_GEOPOINT_PATTERN_DEFAULT = re.compile(r'^(.+), ?(.+)$')
+
+def _extract_geopoint_default(xi: str) -> Union[Tuple[float, float], float]:
+    parts = _GEOPOINT_PATTERN_DEFAULT.findall(xi)
+    try:
+        return float(parts[0][0]), float(parts[0][1])
+    except (ValueError, IndexError):
+        return np.nan
+
+_GEOPOINT_PATTERN_ARRAY = re.compile(r'^\s*\[\s*(.+),\s*(.+)\s*\]\s*$')
+
+def _extract_geopoint_array(xi: str) -> Union[Tuple[float, float], float]:
+    parts = _GEOPOINT_PATTERN_ARRAY.findall(xi)
+    try:
+        return float(parts[0][0]), float(parts[0][1])
+    except (ValueError, IndexError):
+        return np.nan
+
+_GEOPOINT_PATTERN_LONLAT = re.compile(r'^\s*\{\s*"lon":\s*(.+),\s*"lat":\s*(.+)\s*\}\s*$')
+_GEOPOINT_PATTERN_LATLON = re.compile(r'^\s*\{\s*"lat":\s*(.+),\s*"lon":\s*(.+)\s*\}\s*$')
+
+def _extract_geopoint_object(xi: str) -> Union[Tuple[float, float], float]:
+    parts = _GEOPOINT_PATTERN_LONLAT.findall(xi)
+    if not parts:
+        parts = _GEOPOINT_PATTERN_LATLON.findall(xi)
+        if parts:
+            parts[0] = parts[0][1], parts[0][0]
+    try:
+        return float(parts[0][0]), float(parts[0][1])
+    except (IndexError, ValueError):
+        return np.nan
+
 def parse_geopoint(x: pd.Series, format: Literal['default', 'array', 'object'] = 'default') -> Union[pd.Series, goodtables.Error]:
     mask = ~x.isna()
-    if format in ('default', 'array'):
-        pattern = r'^(?P<lon>.*), *(?P<lat>.*)$' if format == 'default' else r'^\[ *(?P<lon>.*), *(?P<lat>.*) *\]$'
-        parsed = x[mask].str.extract(pattern, expand=True).apply(pd.to_numeric, axis=1, errors='coerce')
-    elif format == 'object':
-        # apply(json.loads) much slower than str.extract(pattern)
-        pattern = r'^\{ *"lon": *(?P<lon>.*), *"lat": *(?P<lat>.*) *\}$'
-        parsed = x[mask].str.extract(pattern, expand=True).apply(pd.to_numeric, axis=1, errors='coerce')
-        missing = parsed.isna().any(axis=1)
-        pattern = r'^\{ *"lat": *(?P<lat>.*), *"lon": *(?P<lon>.*) *\}$'
-        parsed[missing] = x[mask][missing].str.extract(pattern).apply(pd.to_numeric, axis=1, errors='coerce')
-    invalid = parsed.isna().any(axis=1)
+    functions = {
+        'default': _extract_geopoint_default,
+        'array': _extract_geopoint_array,
+        'object': _extract_geopoint_object
+    }
+    parsed = x[mask].apply(functions[format])
+    invalid = parsed.isna()
     if invalid.any():
         invalids = x[mask][invalid].unique().tolist()
         return type_or_format_error(type='geopoint', format=format, values=invalids)
-    return pd.Series(zip(parsed['lon'], parsed['lat']), index=parsed.index).reindex_like(x)
+    return parsed.reindex_like(x)
