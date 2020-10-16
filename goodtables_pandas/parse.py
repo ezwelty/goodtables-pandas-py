@@ -7,6 +7,7 @@ import goodtables
 import numpy as np
 import pandas as pd
 
+from . import options as OPTIONS
 from .errors import type_or_format_error, constraint_type_or_format_error
 
 def parse_table(df: pd.DataFrame, schema: dict) -> Union[pd.DataFrame, List[goodtables.Error]]:
@@ -141,6 +142,11 @@ def parse_number(x: pd.Series, decimalChar: str = '.', groupChar: str = None, ba
         parsed = parsed.str.replace(groupChar, '', regex=False)
     if decimalChar != '.':
         parsed = parsed.str.replace(decimalChar, '.', regex=False)
+    if OPTIONS.raise_first_invalid_number:
+        try:
+            return parsed.astype(float)
+        except ValueError as e:
+            return type_or_format_error(type='number', message=str(e))
     if bareNumber:
         parsed = parsed.apply(_parse_number, convert_dtype=False)
     else:
@@ -183,6 +189,13 @@ def parse_integer(x: pd.Series, bareNumber: bool = True) -> Union[pd.Series, goo
     Returns:
         Either parsed integers or a parsing error.
     """
+    if OPTIONS.raise_first_invalid_integer:
+        isna = x.isna()
+        try:
+            x = x.where(isna, x[~isna].astype(int))
+            return x.astype('Int64')
+        except ValueError as e:
+            return type_or_format_error(type='integer', message=str(e))
     parsed = x
     if bareNumber:
         parsed = parsed.apply(_parse_integer, convert_dtype=False)

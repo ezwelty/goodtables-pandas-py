@@ -2,6 +2,7 @@ import goodtables
 import pandas as pd
 import pytest
 
+import goodtables_pandas.options as OPTIONS
 from goodtables_pandas.parse import parse_string, parse_number, parse_integer, parse_boolean, parse_date, parse_datetime, parse_year, parse_geopoint, parse_field
 
 def test_parses_string():
@@ -134,7 +135,9 @@ def test_rejects_invalid_uuid() -> None:
     error = parse_string(x, format='email')
     pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions['values']))
 
-def test_parses_valid_number() -> None:
+@pytest.mark.parametrize('raise_first', [True, False])
+def test_parses_valid_number(raise_first) -> None:
+    OPTIONS.raise_first_invalid_number = raise_first
     df = pd.DataFrame([
         ('nan', float('nan')),
         ('+nan', float('nan')),
@@ -262,7 +265,9 @@ def test_rejects_ambiguous_number_with_text() -> None:
     error = parse_number(x, bareNumber=False)
     pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions['values']))
 
-def test_parses_valid_integer() -> None:
+@pytest.mark.parametrize('raise_first', [True, False])
+def test_parses_valid_integer(raise_first) -> None:
+    OPTIONS.raise_first_invalid_integer = raise_first
     df = pd.DataFrame([
         ('1', 1),
         ('+1', 1),
