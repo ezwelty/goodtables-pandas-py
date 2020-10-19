@@ -1,12 +1,19 @@
 """Read tabular data from csv files."""
 import csv
-from typing import List, Union
+from typing import Iterable, List, Union
 
 import goodtables
 import pandas as pd
 
 
 class CSVDialect(csv.Dialect):
+    """
+    Dialect for parsing CSV files instantiated from a CSV Dialect descriptor.
+
+    Arguments:
+        dialect: CSV Dialect (https://specs.frictionlessdata.io/csv-dialect).
+    """
+
     def __init__(self, dialect: dict = {}):
         self.delimiter = dialect.get("delimiter", ",")
         self.doublequote = dialect.get("doubleQuote", True)
@@ -19,8 +26,19 @@ class CSVDialect(csv.Dialect):
 
 
 def read_table(
-    resource: dict, path: str = None
+    resource: dict, path: Union[str, Iterable[str]] = None
 ) -> Union[pd.DataFrame, List[goodtables.Error]]:
+    """
+    Read table from path(s).
+
+    Arguments:
+        resource: Tabular Data Resource descriptor
+            (https://specs.frictionlessdata.io/tabular-data-resource).
+        path: Path(s) to files to read. If `None`, `resource['path']` is used.
+
+    Returns:
+        Table.
+    """
     schema = resource.get("schema", {})
     dialect = resource.get("dialect", {})
     kwargs = dict(

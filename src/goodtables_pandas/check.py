@@ -11,6 +11,16 @@ from .parse import parse_field_constraint
 
 
 def check_constraints(df: pd.DataFrame, schema: dict) -> List[goodtables.Error]:
+    """
+    Check table field constraints.
+
+    Arguments:
+        df: Table.
+        schema: Table schema (https://specs.frictionlessdata.io/table-schema).
+
+    Returns:
+        A list of errors.
+    """
     errors = []
     for field in schema.get("fields", []):
         constraints = field.get("constraints", {})
@@ -32,6 +42,27 @@ def check_field_constraints(  # noqa: C901
     enum: Iterable[Union[str, int, float, bool]] = None,
     field: dict = {},
 ) -> List[goodtables.Error]:
+    """
+    Check field constraints.
+
+    See https://specs.frictionlessdata.io/table-schema/#constraints.
+
+    Arguments:
+        x: Field values.
+        required: Whether values must not be null.
+        unique: Whether values must be unique.
+        minLength: Minimum length.
+        maxLength: Maximum length.
+        minimum: Minimum value.
+        maximum: Maximum value.
+        pattern: Regular expression.
+        enum: Values which field values must match exactly.
+        field: Field descriptor
+            (https://specs.frictionlessdata.io/table-schema/#field-descriptors).
+
+    Returns:
+        A list of errors.
+    """
     name = field.get("name", "field")
     type = field.get("type", "string")
     errors = []
@@ -160,21 +191,24 @@ def check_field_constraints(  # noqa: C901
 
 
 def _as_list(x: Any) -> List[Any]:
+    """
+    Convert non-list object to a list containing the object.
+
+    Arguments:
+        x: Object.
+
+    Returns:
+        The object, or a list containing the object.
+
+    Examples:
+        >>> _as_list(['ab'])
+        ['ab']
+        >>> _as_list('ab')
+        ['ab']
+    """
     if not isinstance(x, list):
         x = [x]
     return x
-
-
-def _check_primary_key_required(
-    df: pd.DataFrame, primaryKey: Union[str, List[str]]
-) -> List[goodtables.Error]:
-    errors = []
-    key = _as_list(primaryKey)
-    for name in key:
-        errors += check_field_constraints(
-            df[name], required=True, field=dict(name=name)
-        )
-    return errors
 
 
 def check_primary_key(
@@ -183,11 +217,26 @@ def check_primary_key(
     skip_required: bool = False,
     skip_single: bool = False,
 ) -> List[goodtables.Error]:
+    """
+    Check table primary key.
+
+    Arguments:
+        df: Table.
+        primaryKey: Primary key field names.
+        skip_required: Whether to not check for missing values in primary key fields.
+        skip_single: Whether to not check for duplicates if primary key is one field.
+
+    Returns:
+        A list of errors.
+    """
     errors = []
     key = _as_list(primaryKey)
     if key:
         if not skip_required:
-            errors += _check_primary_key_required(df, primaryKey)
+            for name in key:
+                errors += check_field_constraints(
+                    df[name], required=True, field=dict(name=name)
+                )
         if skip_single and len(key) < 2:
             return errors
         invalid = df.duplicated(subset=key)
@@ -208,6 +257,17 @@ def check_unique_keys(
     uniqueKeys: Iterable[Union[str, List[str]]],
     skip_single: bool = False,
 ) -> List[goodtables.Error]:
+    """
+    Check table unique keys.
+
+    Arguments:
+        df: Table.
+        uniqueKeys: Unique key field names.
+        skip_single: Whether to not check for duplicates if unique key is one field.
+
+    Returns:
+        A list of errors.
+    """
     errors = []
     for uniqueKey in uniqueKeys:
         key = _as_list(uniqueKey)
@@ -232,6 +292,20 @@ def check_foreign_keys(  # noqa: C901
     references: Dict[str, pd.DataFrame] = {},
     constraint: Literal["uniquekey", "primarykey"] = None,
 ) -> List[goodtables.Error]:
+    """
+    Check table foreign keys.
+
+    Arguments:
+        df: Table.
+        foreignKeys: Forein key descriptors
+            (https://specs.frictionlessdata.io/table-schema/#foreign-keys).
+        references: Foreign tables to check against.
+        constraint: Whether to treat the key in the foreign table as a
+            primary ('primarykey') or unique ('uniquekey') key.
+
+    Returns:
+        A list of errors.
+    """
     errors = []
     child = df
     for foreignKey in foreignKeys:

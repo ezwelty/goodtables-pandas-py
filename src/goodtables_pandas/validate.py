@@ -23,6 +23,17 @@ from .read import read_table
 def validate(  # noqa: C901
     source: Union[str, dict], return_tables: bool = False
 ) -> Union[dict, Tuple[dict, Dict[str, pd.DataFrame]]]:
+    """
+    Validate Tabular Data Package.
+
+    Arguments:
+        source: Path to or content of a Tabular Data Package descriptor
+            (https://specs.frictionlessdata.io/tabular-data-package).
+        return_tables: Whether to return the tables read and parsed during validation.
+
+    Returns:
+        An error report and (if `return_tables=True`) the tables.
+    """
     # Start clock
     start = datetime.datetime.now()
     # Initialize report

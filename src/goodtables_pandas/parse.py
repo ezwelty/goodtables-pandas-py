@@ -15,6 +15,16 @@ from .errors import constraint_type_or_format_error, type_or_format_error
 def parse_table(
     df: pd.DataFrame, schema: dict
 ) -> Union[pd.DataFrame, List[goodtables.Error]]:
+    """
+    Parse table.
+
+    Arguments:
+        df: Table.
+        schema: Table schema (https://specs.frictionlessdata.io/table-schema).
+
+    Returns:
+        Either a table of parsed fields and values, or a list of errors.
+    """
     errors = []
     for field in schema.get("fields", []):
         result = parse_field(df[field["name"]], **field)
@@ -29,6 +39,21 @@ def parse_table(
 def parse_field(
     x: pd.Series, type: str = "string", **field: Any
 ) -> Union[pd.Series, goodtables.Error]:
+    """
+    Parse table field.
+
+    Arguments:
+        x: Field values.
+        type: Field type.
+        field: Additional field attributes
+            (https://specs.frictionlessdata.io/table-schema/#field-descriptors).
+
+    Raises:
+        NotImplementedError: Field type not supported.
+
+    Returns:
+        Either a series of parsed field values, or an error.
+    """
     parser = globals().get(f"parse_{type}", None)
     if not parser:
         raise NotImplementedError(f"Field type not supported: {type}")
@@ -43,6 +68,19 @@ def parse_field_constraint(
     type: str = "string",
     **field: Any,
 ) -> Union[str, int, float, bool, list, datetime.datetime, goodtables.Error]:
+    """
+    Parse field constraint.
+
+    Arguments:
+        x: Constraint value.
+        constraint: Constraint type.
+        type: Field type.
+        field: Additional field attributes
+            (https://specs.frictionlessdata.io/table-schema/#field-descriptors).
+
+    Returns:
+        Parsed field constraint.
+    """
     is_list = isinstance(x, list)
     X = pd.Series(x)
     is_str = X.apply(lambda xi: isinstance(xi, str))

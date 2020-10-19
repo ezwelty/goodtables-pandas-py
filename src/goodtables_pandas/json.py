@@ -5,6 +5,8 @@ from typing import Any
 
 # Inspired by https://stackoverflow.com/a/26512016
 class _JSONEncoder(json.JSONEncoder):
+    """A JSON Encoder that prints each list on a single line."""
+
     def __init__(self, *args: Any, **kwargs: Any):
         super(_JSONEncoder, self).__init__(*args, **kwargs)
         self.indent_n = 0
@@ -33,5 +35,33 @@ class _JSONEncoder(json.JSONEncoder):
         return json.dumps(o, default=str)
 
 
-def dumps(obj: Any, indent: int = 2, **kwargs: Any) -> str:
-    return json.dumps(obj, indent=indent, cls=_JSONEncoder, **kwargs)
+def dumps(obj: Any, **kwargs: Any) -> str:
+    """
+    Serialize an object to a JSON-like string.
+
+    Overrides the default :class:`json.JSONEncoder` to maximize legibility when printed:
+
+    - Places each list on a single line (when `indent` is used).
+    - Does not wrap object keys in quotes ("), resulting in invalid JSON.
+
+    Arguments:
+        obj: Object to serialize.
+        kwargs: Additional keyword arguments to :class:`json.JSONEncoder`.
+
+    Returns:
+        JSON-like string.
+
+    Examples:
+        >>> import json
+        >>> obj = [0, 1]
+        >>> json.dumps(obj, indent=2)
+        '[\n  0,\n  1\n]'
+        >>> dumps(obj, indent=2)
+        '[0, 1]'
+        >>> obj = {'x': 0, 'y': 1}
+        >>> json.dumps(obj, indent=2)
+        '{\n  "x": 0,\n  "y": 1\n}'
+        >>> dumps(obj, indent=2)
+        '{\n  x: 0,\n  y: 1\n}'
+    """
+    return json.dumps(obj, cls=_JSONEncoder, **kwargs)
