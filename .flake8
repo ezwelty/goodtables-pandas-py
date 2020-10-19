@@ -1,7 +1,9 @@
 [flake8]
-select = BLK, C, E, F, W
+select = BLK, C, E, F, I, W
 # E203 Whitespace before ‘:'
 # W503 Line break before binary operator
 ignore = E203, W503
 max-complexity = 10
 max-line-length = 88
+application-import-names = goodtables_pandas, tests
+import-order-style = google
