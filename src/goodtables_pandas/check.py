@@ -1,3 +1,4 @@
+"""Table keys and field constraint checking."""
 from typing import Any, Dict, Iterable, List, Literal, Union
 
 import goodtables

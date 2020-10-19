@@ -1,3 +1,4 @@
+"""Read tabular data from csv files."""
 import csv
 from typing import List, Union
 

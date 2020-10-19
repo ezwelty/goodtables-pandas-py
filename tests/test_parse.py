@@ -1,3 +1,4 @@
+"""Tests for the parse module."""
 import datetime
 
 import pandas as pd
@@ -18,6 +19,7 @@ from goodtables_pandas.parse import (
 
 
 def test_parses_string():
+    """It parses strings."""
     x = pd.Series(["", "a", "nan", float("nan")])
     expected = x
     parsed = parse_string(x)
@@ -25,6 +27,7 @@ def test_parses_string():
 
 
 def test_parses_valid_email() -> None:
+    """It parses valid emails."""
     x = pd.Series(
         [
             "a@z.com",
@@ -41,6 +44,7 @@ def test_parses_valid_email() -> None:
 
 
 def test_rejects_invalid_email() -> None:
+    """It rejects invalid emails."""
     x = pd.Series(
         [
             " a@z.com",  # leading whitespace
@@ -69,6 +73,7 @@ def test_rejects_invalid_email() -> None:
 
 
 def test_rejects_unsupported_email() -> None:
+    """It rejects unsupported (but valid) emails."""
     x = pd.Series(
         [
             "a(comment)@z.com",  # comment in local
@@ -90,6 +95,7 @@ def test_rejects_unsupported_email() -> None:
 
 
 def test_parses_valid_uri() -> None:
+    """It parses valid universal resource identifiers."""
     x = pd.Series(
         [
             "https://john.doe@www.example.com:123/questions/?tag=work&order=new#top",
@@ -107,6 +113,7 @@ def test_parses_valid_uri() -> None:
 
 
 def test_rejects_invalid_uri() -> None:
+    """It rejects invalid universal resource identifiers."""
     x = pd.Series(
         [
             " http://foo.bar",  # leading whitespace
@@ -125,6 +132,7 @@ def test_rejects_invalid_uri() -> None:
 
 
 def test_parses_valid_binary() -> None:
+    """It parses valid base64-encoded binary."""
     x = pd.Series(
         [
             "YW55" "YW55IGNh",  # 4  # 8
@@ -139,6 +147,7 @@ def test_parses_valid_binary() -> None:
 
 
 def test_rejects_invalid_binary() -> None:
+    """It rejects invalid base64-encoded binary."""
     x = pd.Series(
         [
             "YW5",  # incorrect padding
@@ -152,6 +161,7 @@ def test_rejects_invalid_binary() -> None:
 
 
 def test_parses_valid_uuid() -> None:
+    """It parses valid universally-unique identifiers."""
     x = pd.Series(
         [
             "00000000-0000-0000-0000-000000000000",
@@ -164,6 +174,7 @@ def test_parses_valid_uuid() -> None:
 
 
 def test_rejects_invalid_uuid() -> None:
+    """It rejects invalid universally-unique identifiers."""
     x = pd.Series(
         [
             "00000000000000000000000000000000",  # missing dashes
@@ -180,6 +191,7 @@ def test_rejects_invalid_uuid() -> None:
 
 @pytest.mark.parametrize("raise_first", [True, False])
 def test_parses_valid_number(raise_first) -> None:
+    """It parses valid numbers."""
     OPTIONS.raise_first_invalid_number = raise_first
     df = pd.DataFrame(
         [
@@ -225,12 +237,14 @@ def test_parses_valid_number(raise_first) -> None:
 
 
 def test_rejects_invalid_number() -> None:
+    """It rejects invalid numbers."""
     x = pd.Series(["NA", "nan1", "++1", "--1", "1+", "1e2+1", "e2", "1e"])
     error = parse_number(x)
     pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions["values"]))
 
 
 def test_parses_valid_number_with_custom_characters() -> None:
+    """It parses valid numbers with custom group and decimal separators."""
     df = pd.DataFrame(
         [
             ("1 234", 1234.0),
@@ -266,6 +280,7 @@ def test_parses_valid_number_with_custom_characters() -> None:
 
 
 def test_parses_valid_number_with_text():
+    """It parses valid numbers with leading and trailing text."""
     df = pd.DataFrame(
         [
             ("$nan", float("nan")),
@@ -301,6 +316,7 @@ def test_parses_valid_number_with_text():
 
 
 def test_rejects_ambiguous_number_with_text() -> None:
+    """It rejects numbers made ambiguous by leading or trailing text."""
     x = pd.Series(["$nan inf", "E 0e2.1", "E 0e2-1", "E 0e2+1", "1e23E2"])
     error = parse_number(x, bareNumber=False)
     pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions["values"]))
@@ -308,6 +324,7 @@ def test_rejects_ambiguous_number_with_text() -> None:
 
 @pytest.mark.parametrize("raise_first", [True, False])
 def test_parses_valid_integer(raise_first) -> None:
+    """It parses valid integers."""
     OPTIONS.raise_first_invalid_integer = raise_first
     df = pd.DataFrame([("1", 1), ("+1", 1), ("-1", -1), ("001", 1), ("1234", 1234)])
     parsed = parse_integer(df[0])
@@ -315,6 +332,7 @@ def test_parses_valid_integer(raise_first) -> None:
 
 
 def test_rejects_invalid_integer() -> None:
+    """It rejects invalid integers."""
     x = pd.Series(
         [
             "1+",
@@ -332,6 +350,7 @@ def test_rejects_invalid_integer() -> None:
 
 
 def test_parses_valid_integer_with_text() -> None:
+    """It parses valid integers with leading and trailing text."""
     df = pd.DataFrame(
         [
             ("$1+", 1),
@@ -349,6 +368,7 @@ def test_parses_valid_integer_with_text() -> None:
 
 
 def test_rejects_ambiguous_integer_with_text() -> None:
+    """It rejects integers made ambiguous by leading and trailing text."""
     x = pd.Series(
         [
             "1.2",
@@ -362,6 +382,7 @@ def test_rejects_ambiguous_integer_with_text() -> None:
 
 
 def test_parses_valid_boolean() -> None:
+    """It parses valid booleans."""
     trueValues = "true", "True", "TRUE", "1"
     falseValues = "false", "False", "FALSE", "0"
     df = pd.DataFrame(
@@ -375,6 +396,7 @@ def test_parses_valid_boolean() -> None:
 
 
 def test_rejects_invalid_boolean() -> None:
+    """It rejects invalid booleans."""
     trueValues = "true", "True", "TRUE", "1"
     falseValues = "false", "False", "FALSE", "0"
     x = pd.Series(
@@ -390,6 +412,7 @@ def test_rejects_invalid_boolean() -> None:
 
 
 def test_parses_valid_date() -> None:
+    """It parses valid dates."""
     df = pd.DataFrame(
         [
             ("2010-01-01", pd.Timestamp(2010, 1, 1)),
@@ -411,6 +434,7 @@ def test_parses_valid_date() -> None:
 
 
 def test_rejects_invalid_date() -> None:
+    """It rejects invalid dates."""
     x = pd.Series(
         [
             "2010-02-29",  # non-existent leap year
@@ -427,6 +451,7 @@ def test_rejects_invalid_date() -> None:
 
 @pytest.mark.xfail(reason="pd.Timestamp is limited to ~584 year range")
 def test_parses_valid_outofrange_dates() -> None:
+    """It parses valid dates outside the range supported by pandas.Timestamp."""
     df = pd.DataFrame(
         [
             ("1676-01-01", datetime.date(1676, 1, 1)),
@@ -438,6 +463,7 @@ def test_parses_valid_outofrange_dates() -> None:
 
 
 def test_parses_valid_datetime() -> None:
+    """It parses valid datetimes."""
     df = pd.DataFrame(
         [
             ("2010-01-01T01:02:03Z", pd.Timestamp(2010, 1, 1, 1, 2, 3).tz_localize(0)),
@@ -462,6 +488,7 @@ def test_parses_valid_datetime() -> None:
 
 
 def test_rejects_invalid_datetime() -> None:
+    """It rejects invalid datetimes."""
     x = pd.Series(
         [
             "2010-02-29T00:00:00Z",  # non-existent leap year
@@ -480,6 +507,7 @@ def test_rejects_invalid_datetime() -> None:
 
 @pytest.mark.xfail(reason="pd.Timestamp wraps seconds > 59")
 def test_rejects_datetime_with_outofrange_seconds() -> None:
+    """It rejects datetimes with out of range seconds."""
     x = pd.Series(
         [
             "2020-12-31T00:00:61Z",  # second out of range
@@ -490,6 +518,7 @@ def test_rejects_datetime_with_outofrange_seconds() -> None:
 
 
 def test_parses_valid_year() -> None:
+    """It parses valid years."""
     df = pd.DataFrame(
         [
             ("2020", 2020),
@@ -503,6 +532,7 @@ def test_parses_valid_year() -> None:
 
 
 def test_rejects_invalid_year() -> None:
+    """It rejects invalid years."""
     x = pd.Series(
         [
             "nan",
@@ -515,6 +545,7 @@ def test_rejects_invalid_year() -> None:
 
 
 def test_parses_valid_geopoint() -> None:
+    """It parses valid geopoints (default format)."""
     df = pd.DataFrame(
         [
             ("0.1, 2.3", (0.1, 2.3)),
@@ -534,6 +565,7 @@ def test_parses_valid_geopoint() -> None:
 
 
 def test_rejects_invalid_geopoint() -> None:
+    """It rejects invalid geopoints (default format)."""
     x = pd.Series(
         [
             "0,  1",  # two spaces after comma (NOTE: valid?)
@@ -548,6 +580,7 @@ def test_rejects_invalid_geopoint() -> None:
 
 
 def test_parses_valid_geopoint_array() -> None:
+    """It parses valid geopoints (JSON array)."""
     df = pd.DataFrame(
         [
             ("[0.1, 2.3]", (0.1, 2.3)),
@@ -566,6 +599,7 @@ def test_parses_valid_geopoint_array() -> None:
 
 
 def test_rejects_invalid_geopoint_array() -> None:
+    """It rejects invalid geopoints (JSON array)."""
     x = pd.Series(
         [
             "[0, 1, 2]",  # too many coordinates
@@ -581,6 +615,7 @@ def test_rejects_invalid_geopoint_array() -> None:
 
 
 def test_parses_valid_geopoint_object() -> None:
+    """It parses valid geopoints (JSON object)."""
     df = pd.DataFrame(
         [
             ('{"lon": 0.1, "lat": 2.3}', (0.1, 2.3)),
@@ -606,6 +641,7 @@ def test_parses_valid_geopoint_object() -> None:
 
 
 def test_rejects_invalid_geopoint_object() -> None:
+    """It rejects invalid geopoints (JSON object)."""
     x = pd.Series(
         [
             '{"lon": 0, "lat": 1, "z": 2}',  # too many coordinates
@@ -663,6 +699,7 @@ def test_rejects_invalid_geopoint_object() -> None:
     ],
 )
 def test_propagates_null_and_maintains_dtype(x: str, field: str, dtype: str) -> None:
+    """It propagates null values and outputs the correct field data type."""
     print(field)
     # null only
     parsed = parse_field(pd.Series([float("nan")], dtype=str), **field)

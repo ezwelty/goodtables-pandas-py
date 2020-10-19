@@ -1,3 +1,4 @@
+"""Validate tabular data packages."""
 import datetime
 import math
 import re

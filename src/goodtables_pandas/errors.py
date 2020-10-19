@@ -1,3 +1,4 @@
+"""Custom error construction."""
 from typing import Any, Iterable
 
 import goodtables

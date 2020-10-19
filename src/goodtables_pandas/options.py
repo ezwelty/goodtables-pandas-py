@@ -1,3 +1,5 @@
+"""Configuration options."""
+
 raise_first_invalid_integer = False
 """
 bool: Whether to only report the first invalid value of an integer field.

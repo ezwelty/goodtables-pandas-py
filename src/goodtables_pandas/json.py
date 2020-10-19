@@ -1,3 +1,4 @@
+"""Custom JSON encoding."""
 import json
 from typing import Any
 

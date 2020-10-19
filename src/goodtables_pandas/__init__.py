@@ -1,3 +1,4 @@
+"""Read and validate Frictionless Data Tabular Data Packages with pandas."""
 from . import check
 from . import json
 from . import options
