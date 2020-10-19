@@ -3,7 +3,7 @@ from typing import Any, Dict, Iterable, List, Literal, Union
 import goodtables
 import pandas as pd
 
-from .errors import constraint_error, key_error, foreign_key_error
+from .errors import constraint_error, foreign_key_error, key_error
 from .parse import parse_field_constraint
 
 # ---- Field constraints ----
@@ -19,7 +19,7 @@ def check_constraints(df: pd.DataFrame, schema: dict) -> List[goodtables.Error]:
     return errors
 
 
-def check_field_constraints(
+def check_field_constraints(  # noqa: C901
     x: pd.Series,
     required: bool = False,
     unique: bool = False,
@@ -92,7 +92,7 @@ def check_field_constraints(
         "year",
         "yearmonth",
     )
-    if minimum is not None:
+    if minimum is not None and type in minmax_types:
         minimum = parse_field_constraint(minimum, "minimum", **field)
         if isinstance(minimum, goodtables.Error):
             errors.append(minimum)
@@ -108,7 +108,7 @@ def check_field_constraints(
                         values=list(x[invalid].unique()),
                     )
                 )
-    if maximum is not None:
+    if maximum is not None and type in minmax_types:
         maximum = parse_field_constraint(maximum, "maximum", **field)
         if isinstance(maximum, goodtables.Error):
             errors.append(maximum)
@@ -225,7 +225,7 @@ def check_unique_keys(
     return errors
 
 
-def check_foreign_keys(
+def check_foreign_keys(  # noqa: C901
     df: pd.DataFrame,
     foreignKeys: Iterable[dict],
     references: Dict[str, pd.DataFrame] = {},

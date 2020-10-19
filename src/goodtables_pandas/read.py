@@ -1,5 +1,5 @@
 import csv
-from typing import Dict, List, Union
+from typing import List, Union
 
 import goodtables
 import pandas as pd

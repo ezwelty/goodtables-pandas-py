@@ -1,6 +1,7 @@
 import json
 from typing import Any
 
+
 # Inspired by https://stackoverflow.com/a/26512016
 class JSONEncoder(json.JSONEncoder):
     def __init__(self, *args: Any, **kwargs: Any):

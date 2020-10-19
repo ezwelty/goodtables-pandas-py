@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from . import options as OPTIONS
-from .errors import type_or_format_error, constraint_type_or_format_error
+from .errors import constraint_type_or_format_error, type_or_format_error
 
 
 def parse_table(
@@ -87,7 +87,8 @@ def parse_string(
     last. Comments, IP address literals, quoted local parts, and internationalized
     domain names are not currently supported.
 
-    Uniform Resource Identifier (https://en.wikipedia.org/wiki/Uniform_Resource_Identifier):
+    Uniform Resource Identifier
+    (https://en.wikipedia.org/wiki/Uniform_Resource_Identifier):
     The scheme must start with a letter (`a-zA-Z`) and may contain characters `a-z`,
     `A-Z`, `0-9`, and `+.-`. It must be followed by `:`, optionally `//`, and one or
     more non-whitespace characters. No additional validation is performed.
@@ -97,8 +98,10 @@ def parse_string(
     padded with `=` to ensure the last block contains four characters.
     Whitespace is ignored, per RFC 4648 (https://www.ietf.org/rfc/rfc4648.txt).
 
-    Universally unique identifier (https://en.wikipedia.org/wiki/Universally_unique_identifier#Format):
-    Blocks of characters `a-f`, `A-F`, and `0-9` of length, 8, 4, 4, 4, 12, separated by `-`.
+    Universally unique identifier
+    (https://en.wikipedia.org/wiki/Universally_unique_identifier#Format):
+    Blocks of characters `a-f`, `A-F`, and `0-9` of length, 8, 4, 4, 4, 12,
+    separated by `-`.
 
     Arguments:
         x: Field values.
@@ -108,7 +111,7 @@ def parse_string(
         Either the parsed field values or an error.
     """
     patterns = {
-        "email": r"^(?=[^@]{1,64}@)[a-z0-9!#$%&'\*\+\-\/=\?\^_`{|}~]+(?:\.[a-z0-9!#$%&'\*\+\-\/=\?\^_`{|}~]+)*@(?=[^.]{1,63}(?:\.|$))[a-z0-9]+(?:\-[a-z0-9]+)*(?:\.(?=[^.]{1,63}(?:\.|$))[a-z0-9]+(?:\-[a-z0-9]+)*)+$",
+        "email": r"^(?=[^@]{1,64}@)[a-z0-9!#$%&'\*\+\-\/=\?\^_`{|}~]+(?:\.[a-z0-9!#$%&'\*\+\-\/=\?\^_`{|}~]+)*@(?=[^.]{1,63}(?:\.|$))[a-z0-9]+(?:\-[a-z0-9]+)*(?:\.(?=[^.]{1,63}(?:\.|$))[a-z0-9]+(?:\-[a-z0-9]+)*)+$",  # noqa: E501
         "uri": r"^[a-z][a-z0-9+.-]*:(?:\/\/[^\s]+|[^\s\/][^\s]*)$",
         "uuid": r"^[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}$",
     }

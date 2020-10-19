@@ -22,7 +22,7 @@ def constraint_type_or_format_error(
     name: str = "field",
     type: str = "string",
     format: str = "default",
-    message: str = "Constraint {constraint}: {value} for {name} is not type: {type} and format: {format}",
+    message: str = "Constraint {constraint}: {value} for {name} is not type: {type} and format: {format}",  # noqa: E501
 ) -> goodtables.Error:
     data = dict(name=name, constraint=constraint, value=value, type=type, format=format)
     return goodtables.Error(
@@ -57,7 +57,7 @@ def foreign_key_error(
     code: str,
     constraint: str,
     value: dict,
-    message: str = "Rows in {value['reference']['resource']} violate {constraint}: {value}",
+    message: str = "Rows in {value['reference']['resource']} violate {constraint}: {value}",  # noqa: E501
     values: Iterable = None,
 ) -> goodtables.Error:
     data = dict(constraint=constraint, value=value, values=values)

@@ -1,18 +1,19 @@
-import goodtables
+import datetime
+
 import pandas as pd
 import pytest
 
 import goodtables_pandas.options as OPTIONS
 from goodtables_pandas.parse import (
-    parse_string,
-    parse_number,
-    parse_integer,
     parse_boolean,
     parse_date,
     parse_datetime,
-    parse_year,
-    parse_geopoint,
     parse_field,
+    parse_geopoint,
+    parse_integer,
+    parse_number,
+    parse_string,
+    parse_year,
 )
 
 
@@ -30,8 +31,10 @@ def test_parses_valid_email() -> None:
             "a.b@z.com",  # inner .
             "a@z-z.com",  # inner -
             "azAZ09!#$%&'*+-/=?^_`{|}~@azAZ09.com",  # unquoted special characters
-            "0123456789012345678901234567890123456789012345678901234567890123@z.com",  # local = 64 characters
-            "a@012345678901234567890123456789012345678901234567890123456789012.com",  # label = 63 characters
+            # local = 64 characters
+            "0123456789012345678901234567890123456789012345678901234567890123@z.com",
+            # label = 63 characters
+            "a@012345678901234567890123456789012345678901234567890123456789012.com",
         ]
     )
     pd.testing.assert_series_equal(x, parse_string(x, format="email"))
@@ -55,8 +58,10 @@ def test_rejects_invalid_email() -> None:
             "a@z.",  # empty label
             "a@z..",  # empty label
             "a@z_z.com",  # invalid character
-            "01234567890123456789012345678901234567890123456789012345678901234@z.com",  # local > 64 characters
-            "a@0123456789012345678901234567890123456789012345678901234567890123.com",  # label > 63 characters
+            # local > 64 characters
+            "01234567890123456789012345678901234567890123456789012345678901234@z.com",
+            # label > 63 characters
+            "a@0123456789012345678901234567890123456789012345678901234567890123.com",
         ]
     )
     error = parse_string(x, format="email")
@@ -87,7 +92,7 @@ def test_rejects_unsupported_email() -> None:
 def test_parses_valid_uri() -> None:
     x = pd.Series(
         [
-            "https://john.doe@www.example.com:123/forum/questions/?tag=work&order=new#top",
+            "https://john.doe@www.example.com:123/questions/?tag=work&order=new#top",
             "ldap://[2001:db8::7]/c=GB?objectClass?one",
             "mailto:John.Doe@example.com",
             "news:comp.infosystems.www.servers.unix",
@@ -428,6 +433,7 @@ def test_parses_valid_outofrange_dates() -> None:
             ("2263-12-31", datetime.date(2263, 12, 31)),
         ]
     )
+    parsed = parse_date(df[0])
     assert (parsed == df[1]).all()
 
 
@@ -639,7 +645,7 @@ def test_rejects_invalid_geopoint_object() -> None:
         ("2020-12-31", {"type": "date"}, "datetime64[ns]"),
         ("2020/12/31", {"type": "date", "format": "any"}, "datetime64[ns]"),
         ("2020/12/31", {"type": "date", "format": "%Y/%m/%d"}, "datetime64[ns]"),
-        # Skip type:datetime, format:default - datetime64[ns, UTC], but NaN datetime64[ns]
+        # Skip type:datetime, format:default - datetime64[ns, UTC], NaN datetime64[ns]
         (
             "2020/12/31 00:00:00",
             {"type": "datetime", "format": "any"},

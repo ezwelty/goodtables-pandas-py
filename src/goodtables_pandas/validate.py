@@ -19,7 +19,7 @@ from .parse import parse_table
 from .read import read_table
 
 
-def validate(
+def validate(  # noqa: C901
     source: Union[str, dict], return_tables: bool = False
 ) -> Union[dict, Tuple[dict, Dict[str, pd.DataFrame]]]:
     # Start clock
@@ -41,7 +41,7 @@ def validate(
     )
     # Remove row_limit warnings
     report["warnings"] = [
-        w for w in report["warnings"] if re.match("row\(s\) limit", w)
+        w for w in report["warnings"] if re.match(r"row\(s\) limit", w)
     ]
     # Retrieve descriptor
     package = datapackage.Package(source).descriptor
@@ -72,7 +72,7 @@ def validate(
             keys = resources[i]["schema"].get("uniqueKeys", [])
             keys.append(key)
             resources[i]["schema"]["uniqueKeys"] = [
-                list(t) for t in set(tuple(l) for l in keys)
+                list(t) for t in set(tuple(k) for k in keys)
             ]
     for resource, name in zip(resources, names):
         required, unique = [], []
@@ -83,7 +83,7 @@ def validate(
             required += primaryKey
             keys = schema.get("uniqueKeys", [])
             keys.append(primaryKey)
-            schema["uniqueKeys"] = [list(t) for t in set(tuple(l) for l in keys)]
+            schema["uniqueKeys"] = [list(t) for t in set(tuple(k) for k in keys)]
             schema.pop("primaryKey")
         # uniqueKey: Move to field unique (if single)
         uniqueKeys = schema.get("uniqueKeys", [])
