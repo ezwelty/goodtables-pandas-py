@@ -151,6 +151,20 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "flake8"
+version = "3.8.4"
+description = "the modular source code checker: pep8 pyflakes and co"
+category = "dev"
+optional = false
+python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,>=2.7"
+
+[package.dependencies]
+importlib-metadata = {version = "*", markers = "python_version < \"3.8\""}
+mccabe = ">=0.6.0,<0.7.0"
+pycodestyle = ">=2.6.0a1,<2.7.0"
+pyflakes = ">=2.2.0,<2.3.0"
+
+[[package]]
 name = "goodtables"
 version = "2.5.2"
 description = "Goodtables is a framework to inspect tabular data."
@@ -291,6 +305,14 @@ six = "*"
 develop = ["tox"]
 
 [[package]]
+name = "mccabe"
+version = "0.6.1"
+description = "McCabe checker, plugin for flake8"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "numpy"
 version = "1.19.2"
 description = "NumPy is the fundamental package for array computing with Python."
@@ -356,6 +378,22 @@ dev = ["pre-commit", "tox"]
 name = "py"
 version = "1.9.0"
 description = "library with cross-python path, ini-parsing, io, code, log facilities"
+category = "dev"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[[package]]
+name = "pycodestyle"
+version = "2.6.0"
+description = "Python style guide checker"
+category = "dev"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[[package]]
+name = "pyflakes"
+version = "2.2.0"
+description = "passive checker of Python programs"
 category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
@@ -624,7 +662,7 @@ testing = ["pytest (>=3.5,<3.7.3 || >3.7.3)", "pytest-checkdocs (>=1.2.3)", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "f34b734fa7b8474f5e99b674167af7485853287b2596c8ef374774a9b2b93727"
+content-hash = "6f5d53c020fd2e9ae1ffb55446901d57725879e823a5ddebe918b7c447b2adf5"
 
 [metadata.files]
 atomicwrites = [
@@ -712,6 +750,10 @@ docutils = [
 ]
 et-xmlfile = [
     {file = "et_xmlfile-1.0.1.tar.gz", hash = "sha256:614d9722d572f6246302c4491846d2c393c199cfa4edc9af593437691683335b"},
+]
+flake8 = [
+    {file = "flake8-3.8.4-py2.py3-none-any.whl", hash = "sha256:749dbbd6bfd0cf1318af27bf97a14e28e5ff548ef8e5b1566ccfb25a11e7c839"},
+    {file = "flake8-3.8.4.tar.gz", hash = "sha256:aadae8761ec651813c24be05c6f7b4680857ef6afaae4651a4eccaef97ce6c3b"},
 ]
 goodtables = [
     {file = "goodtables-2.5.2-py2.py3-none-any.whl", hash = "sha256:41a4bcee52c553b64f2904c10d8869c4664a5ba3b10f1cf3e93be331061dffd6"},
@@ -814,6 +856,10 @@ jsonschema = [
 linear-tsv = [
     {file = "linear-tsv-1.1.0.tar.gz", hash = "sha256:b504d78f4075615ae75de86a16e5680701a441fc84da2a2cf9f94351ab1ccbf5"},
 ]
+mccabe = [
+    {file = "mccabe-0.6.1-py2.py3-none-any.whl", hash = "sha256:ab8a6258860da4b6677da4bd2fe5dc2c659cff31b3ee4f7f5d64e79735b80d42"},
+    {file = "mccabe-0.6.1.tar.gz", hash = "sha256:dd8d182285a0fe56bace7f45b5e7d1a6ebcbf524e8f3bd87eb0f125271b8831f"},
+]
 numpy = [
     {file = "numpy-1.19.2-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:b594f76771bc7fc8a044c5ba303427ee67c17a09b36e1fa32bde82f5c419d17a"},
     {file = "numpy-1.19.2-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:e6ddbdc5113628f15de7e4911c02aed74a4ccff531842c583e5032f6e5a179bd"},
@@ -878,6 +924,14 @@ pluggy = [
 py = [
     {file = "py-1.9.0-py2.py3-none-any.whl", hash = "sha256:366389d1db726cd2fcfc79732e75410e5fe4d31db13692115529d34069a043c2"},
     {file = "py-1.9.0.tar.gz", hash = "sha256:9ca6883ce56b4e8da7e79ac18787889fa5206c79dcc67fb065376cd2fe03f342"},
+]
+pycodestyle = [
+    {file = "pycodestyle-2.6.0-py2.py3-none-any.whl", hash = "sha256:2295e7b2f6b5bd100585ebcb1f616591b652db8a741695b3d8f5d28bdc934367"},
+    {file = "pycodestyle-2.6.0.tar.gz", hash = "sha256:c58a7d2815e0e8d7972bf1803331fb0152f867bd89adf8a01dfd55085434192e"},
+]
+pyflakes = [
+    {file = "pyflakes-2.2.0-py2.py3-none-any.whl", hash = "sha256:0d94e0e05a19e57a99444b6ddcf9a6eb2e5c68d3ca1e98e90707af8152c90a92"},
+    {file = "pyflakes-2.2.0.tar.gz", hash = "sha256:35b2d75ee967ea93b55750aa9edbbf72813e06a66ba54438df2cfac9e3c27fc8"},
 ]
 pyparsing = [
     {file = "pyparsing-2.4.7-py2.py3-none-any.whl", hash = "sha256:ef9d7589ef3c200abe66653d3f1ab1033c3c419ae9b9bdb1240a85b024efc88b"},

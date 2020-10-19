@@ -10,26 +10,38 @@ import pandas as pd
 from . import options as OPTIONS
 from .errors import type_or_format_error, constraint_type_or_format_error
 
-def parse_table(df: pd.DataFrame, schema: dict) -> Union[pd.DataFrame, List[goodtables.Error]]:
+
+def parse_table(
+    df: pd.DataFrame, schema: dict
+) -> Union[pd.DataFrame, List[goodtables.Error]]:
     errors = []
-    for field in schema.get('fields', []):
-        result = parse_field(df[field['name']], **field)
+    for field in schema.get("fields", []):
+        result = parse_field(df[field["name"]], **field)
         if isinstance(result, goodtables.Error):
-            result._message_substitutions['name'] = field['name']
+            result._message_substitutions["name"] = field["name"]
             errors.append(result)
         else:
-            df[field['name']] = result
+            df[field["name"]] = result
     return errors or df
 
-def parse_field(x: pd.Series, type: str = 'string', **field: Any) -> Union[pd.Series, goodtables.Error]:
-    parser = globals().get(f'parse_{type}', None)
+
+def parse_field(
+    x: pd.Series, type: str = "string", **field: Any
+) -> Union[pd.Series, goodtables.Error]:
+    parser = globals().get(f"parse_{type}", None)
     if not parser:
-        raise NotImplementedError(f'Field type not supported: {type}')
-    argnames = parser.__code__.co_varnames[1:parser.__code__.co_argcount]
+        raise NotImplementedError(f"Field type not supported: {type}")
+    argnames = parser.__code__.co_varnames[1 : parser.__code__.co_argcount]
     field = {key: field[key] for key in argnames if key in field}
     return parser(x, **field)
 
-def parse_field_constraint(x: Union[str, int, float, bool, list], constraint: str, type: str = 'string', **field: Any) -> Union[str, int, float, bool, list, datetime.datetime, goodtables.Error]:
+
+def parse_field_constraint(
+    x: Union[str, int, float, bool, list],
+    constraint: str,
+    type: str = "string",
+    **field: Any,
+) -> Union[str, int, float, bool, list, datetime.datetime, goodtables.Error]:
     is_list = isinstance(x, list)
     X = pd.Series(x)
     is_str = X.apply(lambda xi: isinstance(xi, str))
@@ -39,13 +51,18 @@ def parse_field_constraint(x: Union[str, int, float, bool, list], constraint: st
     if isinstance(result, goodtables.Error):
         data = result._message_substitutions
         return constraint_type_or_format_error(
-            name=field.get('name', 'field'), constraint=constraint,
+            name=field.get("name", "field"),
+            constraint=constraint,
             value=X[is_str].unique().tolist() if is_list else x,
-            type=type, format=data['format'])
+            type=type,
+            format=data["format"],
+        )
     X[is_str] = result
     return X.tolist() if is_list else X[0]
 
+
 # ---- Field parsers ----
+
 
 def _validate_string_binary(xi: str) -> bool:
     try:
@@ -54,7 +71,11 @@ def _validate_string_binary(xi: str) -> bool:
     except Exception:
         return False
 
-def parse_string(x: pd.Series, format: Literal['default', 'email', 'uri', 'binary', 'uuid'] = 'default') -> Union[pd.Series, goodtables.Error]:
+
+def parse_string(
+    x: pd.Series,
+    format: Literal["default", "email", "uri", "binary", "uuid"] = "default",
+) -> Union[pd.Series, goodtables.Error]:
     """
     Parse field values as string.
 
@@ -87,41 +108,52 @@ def parse_string(x: pd.Series, format: Literal['default', 'email', 'uri', 'binar
         Either the parsed field values or an error.
     """
     patterns = {
-        'email': r"^(?=[^@]{1,64}@)[a-z0-9!#$%&'\*\+\-\/=\?\^_`{|}~]+(?:\.[a-z0-9!#$%&'\*\+\-\/=\?\^_`{|}~]+)*@(?=[^.]{1,63}(?:\.|$))[a-z0-9]+(?:\-[a-z0-9]+)*(?:\.(?=[^.]{1,63}(?:\.|$))[a-z0-9]+(?:\-[a-z0-9]+)*)+$",
-        'uri': r"^[a-z][a-z0-9+.-]*:(?:\/\/[^\s]+|[^\s\/][^\s]*)$",
-        'uuid': r"^[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}$"
+        "email": r"^(?=[^@]{1,64}@)[a-z0-9!#$%&'\*\+\-\/=\?\^_`{|}~]+(?:\.[a-z0-9!#$%&'\*\+\-\/=\?\^_`{|}~]+)*@(?=[^.]{1,63}(?:\.|$))[a-z0-9]+(?:\-[a-z0-9]+)*(?:\.(?=[^.]{1,63}(?:\.|$))[a-z0-9]+(?:\-[a-z0-9]+)*)+$",
+        "uri": r"^[a-z][a-z0-9+.-]*:(?:\/\/[^\s]+|[^\s\/][^\s]*)$",
+        "uuid": r"^[a-f0-9]{8}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{4}-?[a-f0-9]{12}$",
     }
-    if format != 'default':
+    if format != "default":
         mask = ~x.isna()
-        if format == 'binary':
+        if format == "binary":
             invalid = ~x[mask].apply(_validate_string_binary)
         else:
             pattern = patterns[format]
             invalid = ~x[mask].str.contains(pattern, flags=re.IGNORECASE)
         if invalid.any():
             return type_or_format_error(
-                type='string', format=format,
-                values=x[mask][invalid].dropna().unique().tolist())
+                type="string",
+                format=format,
+                values=x[mask][invalid].dropna().unique().tolist(),
+            )
     return x
 
-_NUMBER_PATTERN = re.compile(r"([+-]?(?:nan|inf(?:inity)?|(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:e[+-]?[0-9]+)?))", flags=re.IGNORECASE)
+
+_NUMBER_PATTERN = re.compile(
+    r"([+-]?(?:nan|inf(?:inity)?|(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:e[+-]?[0-9]+)?))",
+    flags=re.IGNORECASE,
+)
+
 
 def _extract_number(xi: Union[str, float]) -> str:
-  try:
-    parts = _NUMBER_PATTERN.findall(xi)
-    if len(parts) == 1:
-      return _parse_number(parts[0])
-    return 'NULL'
-  except TypeError:
-    return 'NULL'
+    try:
+        parts = _NUMBER_PATTERN.findall(xi)
+        if len(parts) == 1:
+            return _parse_number(parts[0])
+        return "NULL"
+    except TypeError:
+        return "NULL"
+
 
 def _parse_number(xi: Union[str, float]) -> Union[float, str]:
     try:
         return float(xi)
     except ValueError:
-        return 'NULL'
+        return "NULL"
 
-def parse_number(x: pd.Series, decimalChar: str = '.', groupChar: str = None, bareNumber: bool = True) -> Union[pd.Series, goodtables.Error]:
+
+def parse_number(
+    x: pd.Series, decimalChar: str = ".", groupChar: str = None, bareNumber: bool = True
+) -> Union[pd.Series, goodtables.Error]:
     """
     Parse strings as numbers.
 
@@ -139,38 +171,41 @@ def parse_number(x: pd.Series, decimalChar: str = '.', groupChar: str = None, ba
     """
     parsed = x
     if groupChar:
-        parsed = parsed.str.replace(groupChar, '', regex=False)
-    if decimalChar != '.':
-        parsed = parsed.str.replace(decimalChar, '.', regex=False)
+        parsed = parsed.str.replace(groupChar, "", regex=False)
+    if decimalChar != ".":
+        parsed = parsed.str.replace(decimalChar, ".", regex=False)
     if OPTIONS.raise_first_invalid_number:
         try:
             return parsed.astype(float)
         except ValueError as e:
-            return type_or_format_error(type='number', message=str(e))
+            return type_or_format_error(type="number", message=str(e))
     if bareNumber:
         parsed = parsed.apply(_parse_number, convert_dtype=False)
     else:
         parsed = parsed.apply(_extract_number, convert_dtype=False)
     # HACK: Use 'NULL' to distinguish values parsed as NaN from parsing failures
     # Use isin (not ==) to avoid warning that elementwise comparison failed
-    unparsed = parsed.isin(['NULL'])
+    unparsed = parsed.isin(["NULL"])
     invalid = ~x.isna() & unparsed
     if invalid.any():
         invalids = x[invalid].unique().tolist()
-        return type_or_format_error(type='number', values=invalids)
+        return type_or_format_error(type="number", values=invalids)
     # Replace 'NULL' with NaN
     return parsed.where(~unparsed).astype(float)
 
+
 _INTEGER_PATTERN = re.compile(r"([+-]?[0-9]+)")
 
+
 def _extract_integer(xi: Union[str, float]) -> Union[str, float]:
-  try:
-    parts = _INTEGER_PATTERN.findall(xi)
-    if len(parts) == 1:
-      return _parse_integer(parts[0])
-    return np.nan
-  except TypeError:
-    return np.nan
+    try:
+        parts = _INTEGER_PATTERN.findall(xi)
+        if len(parts) == 1:
+            return _parse_integer(parts[0])
+        return np.nan
+    except TypeError:
+        return np.nan
+
 
 def _parse_integer(xi: Union[str, float]) -> Union[int, float]:
     try:
@@ -178,7 +213,10 @@ def _parse_integer(xi: Union[str, float]) -> Union[int, float]:
     except ValueError:
         return np.nan
 
-def parse_integer(x: pd.Series, bareNumber: bool = True) -> Union[pd.Series, goodtables.Error]:
+
+def parse_integer(
+    x: pd.Series, bareNumber: bool = True
+) -> Union[pd.Series, goodtables.Error]:
     """
     Parse strings as integers.
 
@@ -193,9 +231,9 @@ def parse_integer(x: pd.Series, bareNumber: bool = True) -> Union[pd.Series, goo
         isna = x.isna()
         try:
             x = x.where(isna, x[~isna].astype(int))
-            return x.astype('Int64')
+            return x.astype("Int64")
         except ValueError as e:
-            return type_or_format_error(type='integer', message=str(e))
+            return type_or_format_error(type="integer", message=str(e))
     parsed = x
     if bareNumber:
         parsed = parsed.apply(_parse_integer, convert_dtype=False)
@@ -204,12 +242,15 @@ def parse_integer(x: pd.Series, bareNumber: bool = True) -> Union[pd.Series, goo
     invalid = ~x.isna() & parsed.isna()
     if invalid.any():
         invalids = x[invalid].unique().tolist()
-        return type_or_format_error(type='integer', values=invalids)    
-    return parsed.astype('Int64')
+        return type_or_format_error(type="integer", values=invalids)
+    return parsed.astype("Int64")
+
 
 def parse_boolean(
-    x: pd.Series, trueValues: Iterable[str] = ('true', 'True', 'TRUE', '1'),
-    falseValues: Iterable[str] = ('false', 'False', 'FALSE', '0')) -> Union[pd.Series, goodtables.Error]:
+    x: pd.Series,
+    trueValues: Iterable[str] = ("true", "True", "TRUE", "1"),
+    falseValues: Iterable[str] = ("false", "False", "FALSE", "0"),
+) -> Union[pd.Series, goodtables.Error]:
     """
     Parse strings as boolean.
 
@@ -227,12 +268,15 @@ def parse_boolean(
     invalid = ~(true | false | na)
     if invalid.any():
         invalids = x[invalid].unique().tolist()
-        return type_or_format_error(type='boolean', values=invalids)
-    x = true.astype(int).astype('Int64')
+        return type_or_format_error(type="boolean", values=invalids)
+    x = true.astype(int).astype("Int64")
     x[na] = np.nan
     return x
 
-def parse_date(x: pd.Series, format: str = 'default') -> Union[pd.Series, goodtables.Error]:
+
+def parse_date(
+    x: pd.Series, format: str = "default"
+) -> Union[pd.Series, goodtables.Error]:
     """
     Parse strings as dates.
 
@@ -247,16 +291,21 @@ def parse_date(x: pd.Series, format: str = 'default') -> Union[pd.Series, goodta
     Returns:
         Either parsed dates (as :class:`pd.Timestamp`) or a parsing error.
     """
-    patterns = {'default': '%Y-%m-%d', 'any': None}
+    patterns = {"default": "%Y-%m-%d", "any": None}
     pattern = patterns.get(format, format)
-    parsed = pd.to_datetime(x, errors='coerce', format=pattern, infer_datetime_format=pattern is None)
+    parsed = pd.to_datetime(
+        x, errors="coerce", format=pattern, infer_datetime_format=pattern is None
+    )
     invalid = ~x.isna() & parsed.isna()
     if invalid.any():
         invalids = x[invalid].unique().tolist()
-        return type_or_format_error(type='date', format=format, values=invalids)
+        return type_or_format_error(type="date", format=format, values=invalids)
     return parsed
 
-def parse_datetime(x: pd.Series, format: str = 'default') -> Union[pd.Series, goodtables.Error]:
+
+def parse_datetime(
+    x: pd.Series, format: str = "default"
+) -> Union[pd.Series, goodtables.Error]:
     """
     Parse strings as datetimes.
 
@@ -271,14 +320,17 @@ def parse_datetime(x: pd.Series, format: str = 'default') -> Union[pd.Series, go
     Returns:
         Either parsed datetimes (as :class:`pd.Timestamp`) or a parsing error.
     """
-    patterns = {'default': '%Y-%m-%dT%H:%M:%S%z', 'any': None}
+    patterns = {"default": "%Y-%m-%dT%H:%M:%S%z", "any": None}
     pattern = patterns.get(format, format)
-    parsed = pd.to_datetime(x, errors='coerce', format=pattern, infer_datetime_format=pattern is None)
+    parsed = pd.to_datetime(
+        x, errors="coerce", format=pattern, infer_datetime_format=pattern is None
+    )
     invalid = ~x.isna() & parsed.isna()
     if invalid.any():
         invalids = x[invalid].unique().tolist()
-        return type_or_format_error(type='datetime', format=format, values=invalids)
+        return type_or_format_error(type="datetime", format=format, values=invalids)
     return parsed
+
 
 def parse_year(x: pd.Series) -> Union[pd.Series, goodtables.Error]:
     """
@@ -298,10 +350,12 @@ def parse_year(x: pd.Series) -> Union[pd.Series, goodtables.Error]:
     invalid = ~x.isna() & parsed.isna()
     if invalid.any():
         invalids = x[invalid].unique().tolist()
-        return type_or_format_error(type='year', values=invalids)    
-    return parsed.astype('Int64')
+        return type_or_format_error(type="year", values=invalids)
+    return parsed.astype("Int64")
 
-_GEOPOINT_PATTERN_DEFAULT = re.compile(r'^([^, ]+), ?([^ ]+)$')
+
+_GEOPOINT_PATTERN_DEFAULT = re.compile(r"^([^, ]+), ?([^ ]+)$")
+
 
 def _extract_geopoint_default(xi: str) -> Union[Tuple[float, float], float]:
     parts = _GEOPOINT_PATTERN_DEFAULT.findall(xi)
@@ -310,7 +364,9 @@ def _extract_geopoint_default(xi: str) -> Union[Tuple[float, float], float]:
     except (ValueError, IndexError):
         return np.nan
 
-_GEOPOINT_PATTERN_ARRAY = re.compile(r'^\s*\[\s*(.+),\s*(.+)\s*\]\s*$')
+
+_GEOPOINT_PATTERN_ARRAY = re.compile(r"^\s*\[\s*(.+),\s*(.+)\s*\]\s*$")
+
 
 def _extract_geopoint_array(xi: str) -> Union[Tuple[float, float], float]:
     parts = _GEOPOINT_PATTERN_ARRAY.findall(xi)
@@ -319,8 +375,14 @@ def _extract_geopoint_array(xi: str) -> Union[Tuple[float, float], float]:
     except (ValueError, IndexError):
         return np.nan
 
-_GEOPOINT_PATTERN_LONLAT = re.compile(r'^\s*\{\s*"lon":\s*(.+),\s*"lat":\s*(.+)\s*\}\s*$')
-_GEOPOINT_PATTERN_LATLON = re.compile(r'^\s*\{\s*"lat":\s*(.+),\s*"lon":\s*(.+)\s*\}\s*$')
+
+_GEOPOINT_PATTERN_LONLAT = re.compile(
+    r'^\s*\{\s*"lon":\s*(.+),\s*"lat":\s*(.+)\s*\}\s*$'
+)
+_GEOPOINT_PATTERN_LATLON = re.compile(
+    r'^\s*\{\s*"lat":\s*(.+),\s*"lon":\s*(.+)\s*\}\s*$'
+)
+
 
 def _extract_geopoint_object(xi: str) -> Union[Tuple[float, float], float]:
     parts = _GEOPOINT_PATTERN_LONLAT.findall(xi)
@@ -333,7 +395,10 @@ def _extract_geopoint_object(xi: str) -> Union[Tuple[float, float], float]:
     except (IndexError, ValueError):
         return np.nan
 
-def parse_geopoint(x: pd.Series, format: Literal['default', 'array', 'object'] = 'default') -> Union[pd.Series, goodtables.Error]:
+
+def parse_geopoint(
+    x: pd.Series, format: Literal["default", "array", "object"] = "default"
+) -> Union[pd.Series, goodtables.Error]:
     """
     Parse strings as geopoints.
 
@@ -354,13 +419,13 @@ def parse_geopoint(x: pd.Series, format: Literal['default', 'array', 'object'] =
     """
     mask = ~x.isna()
     functions = {
-        'default': _extract_geopoint_default,
-        'array': _extract_geopoint_array,
-        'object': _extract_geopoint_object
+        "default": _extract_geopoint_default,
+        "array": _extract_geopoint_array,
+        "object": _extract_geopoint_object,
     }
     parsed = x[mask].apply(functions[format])
     invalid = parsed.isna()
     if invalid.any():
         invalids = x[mask][invalid].unique().tolist()
-        return type_or_format_error(type='geopoint', format=format, values=invalids)
+        return type_or_format_error(type="geopoint", format=format, values=invalids)
     return parsed.reindex_like(x)
