@@ -4,9 +4,9 @@ from typing import Any
 
 
 # Inspired by https://stackoverflow.com/a/26512016
-class JSONEncoder(json.JSONEncoder):
+class _JSONEncoder(json.JSONEncoder):
     def __init__(self, *args: Any, **kwargs: Any):
-        super(JSONEncoder, self).__init__(*args, **kwargs)
+        super(_JSONEncoder, self).__init__(*args, **kwargs)
         self.indent_n = 0
 
     @property
@@ -33,5 +33,5 @@ class JSONEncoder(json.JSONEncoder):
         return json.dumps(o, default=str)
 
 
-def dumps(obj: Any, indent: int = 2, cls: type = JSONEncoder, **kwargs: Any) -> str:
-    return json.dumps(obj, indent=indent, cls=cls, **kwargs)
+def dumps(obj: Any, indent: int = 2, **kwargs: Any) -> str:
+    return json.dumps(obj, indent=indent, cls=_JSONEncoder, **kwargs)
