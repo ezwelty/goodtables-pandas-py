@@ -18,6 +18,8 @@ datapackage = "^1.15.1"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.1.1"
+coverage = {extras = ["toml"], version = "^5.3"}
+pytest-cov = "^2.10.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
