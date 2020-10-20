@@ -10,7 +10,7 @@ This quick and dirty package reads and validates a Frictionless Data [Tabular Da
 ## Usage
 
 ```bash
-pip install git+https://github.com/ezwelty/goodtables-pandas-py
+pip install goodtables-pandas-py
 ```
 
 ```python
