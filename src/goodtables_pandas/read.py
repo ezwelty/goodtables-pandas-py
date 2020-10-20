@@ -14,7 +14,7 @@ class CSVDialect(csv.Dialect):
         dialect: CSV Dialect (https://specs.frictionlessdata.io/csv-dialect).
     """
 
-    def __init__(self, dialect: dict = {}):
+    def __init__(self, dialect: dict = {}) -> None:  # noqa: ANN101
         self.delimiter = dialect.get("delimiter", ",")
         self.doublequote = dialect.get("doubleQuote", True)
         self.escapechar = dialect.get("escapeChar", None)

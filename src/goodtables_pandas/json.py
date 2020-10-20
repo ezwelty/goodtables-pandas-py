@@ -7,15 +7,15 @@ from typing import Any
 class _JSONEncoder(json.JSONEncoder):
     """A JSON Encoder that prints each list on a single line."""
 
-    def __init__(self, *args: Any, **kwargs: Any):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN101
         super(_JSONEncoder, self).__init__(*args, **kwargs)
         self.indent_n = 0
 
     @property
-    def indent_str(self) -> str:
+    def indent_str(self) -> str:  # noqa: ANN101
         return " " * self.indent_n
 
-    def encode(self, o: Any) -> str:
+    def encode(self, o: Any) -> str:  # noqa: ANN101
         if isinstance(o, list):
             primitives = not any([isinstance(i, (list, dict)) for i in o])
             if primitives:

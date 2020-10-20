@@ -18,7 +18,7 @@ from goodtables_pandas.parse import (
 )
 
 
-def test_parses_string():
+def test_parses_string() -> None:
     """It parses strings."""
     x = pd.Series(["", "a", "nan", float("nan")])
     expected = x
@@ -190,7 +190,7 @@ def test_rejects_invalid_uuid() -> None:
 
 
 @pytest.mark.parametrize("raise_first", [True, False])
-def test_parses_valid_number(raise_first) -> None:
+def test_parses_valid_number(raise_first: bool) -> None:
     """It parses valid numbers."""
     OPTIONS.raise_first_invalid_number = raise_first
     df = pd.DataFrame(
@@ -279,7 +279,7 @@ def test_parses_valid_number_with_custom_characters() -> None:
     pd.testing.assert_series_equal(parsed, df[1], check_names=False)
 
 
-def test_parses_valid_number_with_text():
+def test_parses_valid_number_with_text() -> None:
     """It parses valid numbers with leading and trailing text."""
     df = pd.DataFrame(
         [
@@ -323,7 +323,7 @@ def test_rejects_ambiguous_number_with_text() -> None:
 
 
 @pytest.mark.parametrize("raise_first", [True, False])
-def test_parses_valid_integer(raise_first) -> None:
+def test_parses_valid_integer(raise_first: bool) -> None:
     """It parses valid integers."""
     OPTIONS.raise_first_invalid_integer = raise_first
     df = pd.DataFrame([("1", 1), ("+1", 1), ("-1", -1), ("001", 1), ("1234", 1234)])

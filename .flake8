@@ -1,5 +1,5 @@
 [flake8]
-select = BLK, C, D, E, F, I, W
+select = ANN, BLK, C, D, E, F, I, W
 # D107 Missing docstring in __init__
 # D212 Multi-line docstring summary should start at the first line
 # E203 Whitespace before ‘:'

@@ -1,13 +1,15 @@
 """Nox sessions."""
 import tempfile
+from typing import Any
 
 import nox
+from nox.sessions import Session
 
 nox.options.sessions = "lint", "test"
 locations = "src", "tests", "noxfile.py"
 
 
-def install_with_constraints(session, *args, **kwargs):
+def install_with_constraints(session: Session, *args: str, **kwargs: Any) -> None:
     """
     Install packages constrained by Poetry's lock file.
 
@@ -33,7 +35,7 @@ def install_with_constraints(session, *args, **kwargs):
 
 
 @nox.session(python=["3.8"])
-def test(session):
+def test(session: Session) -> None:
     """Test with pytest."""
     args = session.posargs or ["--cov", "--xdoctest"]
     session.run("poetry", "install", "--no-dev", external=True)
@@ -44,17 +46,22 @@ def test(session):
 
 
 @nox.session(python="3.8")
-def lint(session):
+def lint(session: Session) -> None:
     """Lint with flake8."""
     args = session.posargs or locations
     install_with_constraints(
-        session, "flake8", "flake8-black", "flake8-docstrings", "flake8-import-order"
+        session,
+        "flake8",
+        "flake8-annotations",
+        "flake8-black",
+        "flake8-docstrings",
+        "flake8-import-order",
     )
     session.run("flake8", *args)
 
 
 @nox.session(python="3.8")
-def format(session):
+def format(session: Session) -> None:
     """Format with black."""
     args = session.posargs or locations
     install_with_constraints(session, "black")
