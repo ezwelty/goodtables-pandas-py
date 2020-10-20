@@ -28,10 +28,10 @@ def install_with_constraints(session: Session, *args: str, **kwargs: Any) -> Non
             "export",
             "--format=requirements.txt",
             "--without-hashes",
-            "--output=" + requirements.name,
+            f"--output={requirements.name}",
             external=True,
         )
-        session.install("--constraint=" + requirements.name, *args, **kwargs)
+        session.install(f"--constraint={requirements.name}", *args, **kwargs)
 
 
 @nox.session(python=["3.7", "3.8"])

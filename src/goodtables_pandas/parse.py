@@ -55,9 +55,9 @@ def parse_field(
     Returns:
         Either a series of parsed field values, or an error.
     """
-    parser = globals().get("parse_" + type, None)
+    parser = globals().get(f"parse_{type}", None)
     if not parser:
-        raise NotImplementedError("Field type not supported: " + type)
+        raise NotImplementedError(f"Field type not supported: {type}")
     argnames = parser.__code__.co_varnames[1 : parser.__code__.co_argcount]
     field = {key: field[key] for key in argnames if key in field}
     return parser(x, **field)
