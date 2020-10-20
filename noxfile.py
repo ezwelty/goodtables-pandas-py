@@ -25,6 +25,7 @@ def install_with_constraints(session, *args, **kwargs):
             "poetry",
             "export",
             "--format=requirements.txt",
+            "--without-hashes",
             f"--output={requirements.name}",
             external=True,
         )
@@ -34,8 +35,11 @@ def install_with_constraints(session, *args, **kwargs):
 @nox.session(python=["3.8"])
 def test(session):
     """Test with pytest."""
-    args = session.posargs or ["--cov"]
-    install_with_constraints(session, "coverage[toml]", "pytest", "pytest-cov")
+    args = session.posargs or ["--cov", "--xdoctest"]
+    session.run("poetry", "install", "--no-dev", external=True)
+    install_with_constraints(
+        session, "coverage[toml]", "pytest", "pytest-cov", "xdoctest"
+    )
     session.run("pytest", *args)
 
 
@@ -43,14 +47,9 @@ def test(session):
 def lint(session):
     """Lint with flake8."""
     args = session.posargs or locations
-    # install_with_constraints(
-    #     session,
-    #     "flake8",
-    #     "flake8-black",
-    #     "flake8-docstrings",
-    #     "flake8-import-order"
-    # )
-    session.run("poetry", "install", external=True)
+    install_with_constraints(
+        session, "flake8", "flake8-black", "flake8-docstrings", "flake8-import-order"
+    )
     session.run("flake8", *args)
 
 

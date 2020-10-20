@@ -10,7 +10,7 @@ repos:
   hooks:
   - id: test
     name: pytest
-    entry: poetry run pytest
+    entry: poetry run pytest --xdoctest
     language: system
     types: [python]
     pass_filenames: false
