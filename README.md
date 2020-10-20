@@ -1,4 +1,6 @@
 # goodtables-pandas-py
+[![tests](https://github.com/ezwelty/goodtables-pandas-py/workflows/tests/badge.svg)](https://github.com/ezwelty/goodtables-pandas-py/actions?workflow=tests)
+
 _Warning: Not an official [frictionlessdata](https://github.com/frictionlessdata) package_
 
 This quick and dirty package reads and validates a Frictionless Data [Tabular Data Package](https://frictionlessdata.io/specs/tabular-data-package/) using [pandas](https://github.com/pandas-dev/pandas). It is about 100x faster than the official [frictionlessdata/goodtables-py](https://github.com/frictionlessdata/goodtables-py), at the expense of higher memory usage.
