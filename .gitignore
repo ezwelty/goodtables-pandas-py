@@ -16,6 +16,7 @@ __pycache__/
 *.egg-info
 .nox
 .coverage
+coverage.xml
 
 # Pyenv
 .python-version
