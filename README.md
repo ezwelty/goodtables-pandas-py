@@ -1,6 +1,7 @@
 # goodtables-pandas-py
 [![tests](https://github.com/ezwelty/goodtables-pandas-py/workflows/tests/badge.svg)](https://github.com/ezwelty/goodtables-pandas-py/actions?workflow=tests)
 [![coverage](https://codecov.io/gh/ezwelty/goodtables-pandas-py/branch/master/graph/badge.svg)](https://codecov.io/gh/ezwelty/goodtables-pandas-py)
+[![pypi](https://img.shields.io/pypi/v/goodtables-pandas-py.svg)](https://pypi.org/project/goodtables-pandas-py/)
 
 _Warning: Not an official [frictionlessdata](https://github.com/frictionlessdata) package_
 
