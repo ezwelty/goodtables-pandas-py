@@ -1,3 +1,4 @@
+"""Nox sessions."""
 import tempfile
 
 import nox
@@ -42,7 +43,14 @@ def test(session):
 def lint(session):
     """Lint with flake8."""
     args = session.posargs or locations
-    install_with_constraints(session, "flake8", "flake8-black", "flake8-import-order")
+    # install_with_constraints(
+    #     session,
+    #     "flake8",
+    #     "flake8-black",
+    #     "flake8-docstrings",
+    #     "flake8-import-order"
+    # )
+    session.run("poetry", "install", external=True)
     session.run("flake8", *args)
 
 

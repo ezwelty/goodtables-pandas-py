@@ -36,7 +36,7 @@ class _JSONEncoder(json.JSONEncoder):
 
 
 def dumps(obj: Any, **kwargs: Any) -> str:
-    """
+    r"""
     Serialize an object to a JSON-like string.
 
     Overrides the default :class:`json.JSONEncoder` to maximize legibility when printed:
