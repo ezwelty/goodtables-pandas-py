@@ -1,8 +1,9 @@
 """Table keys and field constraint checking."""
-from typing import Any, Dict, Iterable, List, Literal, Union
+from typing import Any, Dict, Iterable, List, Union
 
 import goodtables
 import pandas as pd
+from typing_extensions import Literal
 
 from .errors import constraint_error, foreign_key_error, key_error
 from .parse import parse_field_constraint

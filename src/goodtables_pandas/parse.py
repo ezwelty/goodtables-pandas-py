@@ -2,11 +2,12 @@
 import base64
 import datetime
 import re
-from typing import Any, Iterable, List, Literal, Tuple, Union
+from typing import Any, Iterable, List, Tuple, Union
 
 import goodtables
 import numpy as np
 import pandas as pd
+from typing_extensions import Literal
 
 from . import options as OPTIONS
 from .errors import constraint_type_or_format_error, type_or_format_error
