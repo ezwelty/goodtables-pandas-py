@@ -1,132 +1,100 @@
 """Custom error construction."""
-from typing import Any, Iterable
+from typing import Any, List
 
-import goodtables
+import frictionless
 
 
-def type_or_format_error(
-    message: str = "Values in {name} are not type: {type} and format: {format}",
-    name: str = "field",
-    type: str = "string",
-    format: str = "default",
-    values: Iterable = None,
-) -> goodtables.Error:
-    """
-    Error for field type or format checks.
+class Error(frictionless.errors.Error):
+    """Generic error."""
 
-    Arguments:
-        message: String with substitutions called on other arguments (e.g. '{name}').
-        name: Field name.
-        type: Field type.
-        format: Field format.
-        values: Invalid field values.
+    defaults: dict = {}
 
-    Returns:
-        Error with code 'type-or-format-error'.
-    """
-    data = dict(name=name, type=type, format=format, values=values)
-    return goodtables.Error(
-        code="type-or-format-error", message=message, message_substitutions=data
+    def __init__(self: "Error", note: str = "", **kwargs: Any) -> None:
+        self["code"]: str = self.code
+        self["name"]: str = self.name
+        self["tags"]: List[str] = self.tags
+        self["note"]: str = note
+        self.update({**self.defaults, **kwargs})
+        self["message"]: str = self.template.format(**self)
+        self["description"]: str = self.description
+
+
+class TypeError(Error):
+    """Field values type or format error."""
+
+    code: str = "type-error"
+    name: str = "Type Error"
+    tags: List[str] = ["#body", "#schema"]
+    template: str = (
+        "Values for field {fieldName} "
+        + 'are not type "{fieldType}" and format "{fieldFormat}"'
+    )
+    description: str = (
+        "One or more field values do not match the field type and format."
+    )
+    defaults: dict = {"fieldName": "", "fieldFormat": "default"}
+
+
+class ConstraintTypeError(Error):
+    """Field constraint type or format error."""
+
+    code: str = "constraint-type-error"
+    name: str = "Constraint Type Error"
+    tags: List[str] = ["#body", "#schema"]
+    template: str = (
+        'Constraint {constraintName}: "{constraintValue}" for field {fieldName} '
+        + 'is not type "{fieldType}" and format "{fieldFormat}"'
+    )
+    description: str = "A field constraint does not match the field type and format."
+    defaults: dict = {"fieldName": "", "fieldFormat": "default"}
+
+
+class ConstraintError(Error):
+    """Field constraint error."""
+
+    code: str = "constraint-error"
+    name: str = "Constraint Error"
+    tags: List[str] = ["#body", "#schema"]
+    template: str = (
+        "Values for field {fieldName} do not conform to "
+        + 'constraint {constraintName}: "{constraintValue}"'
+    )
+    description: str = "One or more field values do not conform to a field constraint."
+    defaults: dict = {"fieldName": ""}
+
+
+class PrimaryKeyError(Error):
+    """Primary key error."""
+
+    code: str = "primary-key-error"
+    name: str = "PrimaryKey Error"
+    tags: List[str] = ["#body", "#schema", "#integrity"]
+    template: str = "Rows do not conform to the primary key constraint: {primaryKey}"
+    description: str = (
+        "Values of the primary key fields should be unique for every row."
     )
 
 
-def constraint_type_or_format_error(
-    value: Any,
-    constraint: str = "constraint",
-    name: str = "field",
-    type: str = "string",
-    format: str = "default",
-    message: str = "Constraint {constraint}: {value} for {name} is not type: {type} and format: {format}",  # noqa: E501
-) -> goodtables.Error:
-    """
-    Error for field constraint type or format checks.
+class UniqueKeyError(Error):
+    """Unique key error."""
 
-    Arguments:
-        value: Constraint value.
-        constraint: Constraint type.
-        name: Field name.
-        type: Field type.
-        format: Field format.
-        message: String with substitutions called on other arguments (e.g. '{name}').
+    code: str = "unique-key-error"
+    name: str = "UniqueKey Error"
+    tags: List[str] = ["#body", "#schema", "#integrity"]
+    template: str = "Rows do not conform to the unique key constraint: {uniqueKey}"
+    description: str = "Values of the unique key fields should be unique for every row."
 
-    Returns:
-        Error with code 'type-or-format-error'.
-    """
-    data = dict(name=name, constraint=constraint, value=value, type=type, format=format)
-    return goodtables.Error(
-        code="type-or-format-error", message=message, message_substitutions=data
+
+class ForeignKeyError(Error):
+    """Foreign key error."""
+
+    code: str = "foreign-key-error"
+    name: str = "ForeignKey Error"
+    tags: List[str] = ["#body", "#schema", "#integrity"]
+    template: str = (
+        "Rows in table {reference} "
+        + "do not conform to the foreign key constraint: {foreignKey}"
     )
-
-
-def constraint_error(
-    code: str,
-    constraint: str,
-    value: Any,
-    values: Iterable = None,
-    name: str = "field",
-    message: str = "Values in {name} violate constraint {constraint}: {value}",
-) -> goodtables.Error:
-    """
-    Error for field constraint checks.
-
-    Arguments:
-        code: Error code.
-        constraint: Constraint type.
-        value: Constraint value.
-        values: Invalid field values.
-        name: Field name.
-        message: String with substitutions called on other arguments (e.g. '{name}').
-
-    Returns:
-        Error with code `code`.
-    """
-    data = dict(name=name, constraint=constraint, value=value, values=values)
-    return goodtables.Error(code=code, message=message, message_substitutions=data)
-
-
-def key_error(
-    code: str,
-    constraint: str,
-    value: Any,
-    message: str = "Rows violate {constraint}: {value}",
-    values: Iterable = None,
-) -> goodtables.Error:
-    """
-    Error for table key constraint.
-
-    Arguments:
-        code: Error code.
-        constraint: Constraint type.
-        value: Constraint value.
-        message: String with substitutions called on other arguments (e.g. '{name}').
-        values: Invalid key values.
-
-    Returns:
-        Error with code `code`.
-    """
-    data = dict(constraint=constraint, value=value, values=values)
-    return goodtables.Error(code=code, message=message, message_substitutions=data)
-
-
-def foreign_key_error(
-    code: str,
-    constraint: str,
-    value: dict,
-    message: str = "Rows in {value['reference']['resource']} violate {constraint}: {value}",  # noqa: E501
-    values: Iterable = None,
-) -> goodtables.Error:
-    """
-    Error for table foreign key constraint.
-
-    Arguments:
-        code: Error code.
-        constraint: Constraint type.
-        value: Constraint value.
-        message: String with substitutions called on other arguments (e.g. '{name}').
-        values: Invalid key values.
-
-    Returns:
-        Error with code `code`.
-    """
-    data = dict(constraint=constraint, value=value, values=values)
-    return goodtables.Error(code=code, message=message, message_substitutions=data)
+    description: str = (
+        "Values of the foreign key fields should be in the reference table."
+    )

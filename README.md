@@ -51,25 +51,15 @@ dtype: bool
 
 Although this behavior matches some SQL implementations (namely Microsoft SQL Server), others (namely PostgreSQL and SQLite) choose to treat `null` as unique. See this [dbfiddle](https://dbfiddle.uk/?rdbms=postgres_12&fiddle=8b23d68d139a715e003fe4b012e43e6a).
 
-### Field constraints
-
-#### `pattern`
-
-Support for `pattern` is extended beyond `string` to all field types by testing physical values (e.g. string `"123"`) before they are parsed into their logical representation (e.g. integer `123`). See https://github.com/frictionlessdata/specs/issues/641.
-
-#### `maxLength`, `minLength`
-
-Support for `maxLength` and `minLength` is extended beyond collections (`string`, `array`, and `object`) to field types using the same strategy as for `pattern`.
-
 ### Key constraints
 
-#### `primaryKey`: `primary-key-constraint`
+#### `primaryKey`
 
 Fields in `primaryKey` cannot contain missing values (equivalent to `required: true`).
 
 See https://github.com/frictionlessdata/specs/issues/593.
 
-#### `uniqueKey`: `unique-key-constraint`
+#### `uniqueKey`
 
 The `uniqueKeys` property provides support for one or more row uniqueness
 constraints which, unlike `primaryKey`, do support `null` values. Uniqueness is determined as described above.
@@ -85,7 +75,7 @@ constraints which, unlike `primaryKey`, do support `null` values. Uniqueness is 
 
 See https://github.com/frictionlessdata/specs/issues/593.
 
-#### `foreignKey`: `foreign-key-constraint`
+#### `foreignKey`
 
 The reference key of a `foreignKey` must meet the requirements of `uniqueKey`: it must be unique but can contain `null`. The local key must be present in the reference key, unless one of the fields is null.
 

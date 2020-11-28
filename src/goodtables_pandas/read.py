@@ -2,7 +2,7 @@
 import csv
 from typing import Iterable, List, Union
 
-import goodtables
+import frictionless
 import pandas as pd
 
 
@@ -27,7 +27,7 @@ class CSVDialect(csv.Dialect):
 
 def read_table(
     resource: dict, path: Union[str, Iterable[str]] = None
-) -> Union[pd.DataFrame, List[goodtables.Error]]:
+) -> Union[pd.DataFrame, List[frictionless.errors.SourceError]]:
     """
     Read table from path(s).
 
@@ -69,5 +69,5 @@ def read_table(
         try:
             tables.append(pd.read_csv(p, **kwargs))
         except Exception as e:
-            return [goodtables.Error(code="io-error", message=str(e))]
+            return [frictionless.errors.SourceError(note=str(e))]
     return pd.concat(tables)

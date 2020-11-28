@@ -69,7 +69,7 @@ def test_rejects_invalid_email() -> None:
         ]
     )
     error = parse_string(x, format="email")
-    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions["values"]))
+    pd.testing.assert_series_equal(x, pd.Series(error["values"]))
 
 
 def test_rejects_unsupported_email() -> None:
@@ -91,7 +91,7 @@ def test_rejects_unsupported_email() -> None:
         ]
     )
     error = parse_string(x, format="email")
-    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions["values"]))
+    pd.testing.assert_series_equal(x, pd.Series(error["values"]))
 
 
 def test_parses_valid_uri() -> None:
@@ -128,7 +128,7 @@ def test_rejects_invalid_uri() -> None:
         ]
     )
     error = parse_string(x, format="email")
-    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions["values"]))
+    pd.testing.assert_series_equal(x, pd.Series(error["values"]))
 
 
 def test_parses_valid_binary() -> None:
@@ -157,7 +157,7 @@ def test_rejects_invalid_binary() -> None:
         ]
     )
     error = parse_string(x, format="email")
-    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions["values"]))
+    pd.testing.assert_series_equal(x, pd.Series(error["values"]))
 
 
 def test_parses_valid_uuid() -> None:
@@ -186,7 +186,7 @@ def test_rejects_invalid_uuid() -> None:
         ]
     )
     error = parse_string(x, format="email")
-    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions["values"]))
+    pd.testing.assert_series_equal(x, pd.Series(error["values"]))
 
 
 @pytest.mark.parametrize("raise_first", [True, False])
@@ -240,7 +240,7 @@ def test_rejects_invalid_number() -> None:
     """It rejects invalid numbers."""
     x = pd.Series(["NA", "nan1", "++1", "--1", "1+", "1e2+1", "e2", "1e"])
     error = parse_number(x)
-    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions["values"]))
+    pd.testing.assert_series_equal(x, pd.Series(error["values"]))
 
 
 def test_parses_valid_number_with_custom_characters() -> None:
@@ -319,7 +319,7 @@ def test_rejects_ambiguous_number_with_text() -> None:
     """It rejects numbers made ambiguous by leading or trailing text."""
     x = pd.Series(["$nan inf", "E 0e2.1", "E 0e2-1", "E 0e2+1", "1e23E2"])
     error = parse_number(x, bareNumber=False)
-    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions["values"]))
+    pd.testing.assert_series_equal(x, pd.Series(error["values"]))
 
 
 @pytest.mark.parametrize("raise_first", [True, False])
@@ -346,7 +346,7 @@ def test_rejects_invalid_integer() -> None:
         ]
     )
     error = parse_integer(x)
-    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions["values"]))
+    pd.testing.assert_series_equal(x, pd.Series(error["values"]))
 
 
 def test_parses_valid_integer_with_text() -> None:
@@ -378,7 +378,7 @@ def test_rejects_ambiguous_integer_with_text() -> None:
         ]
     )
     error = parse_integer(x, bareNumber=False)
-    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions["values"]))
+    pd.testing.assert_series_equal(x, pd.Series(error["values"]))
 
 
 def test_parses_valid_boolean() -> None:
@@ -408,7 +408,7 @@ def test_rejects_invalid_boolean() -> None:
         ]
     )
     error = parse_boolean(x, trueValues=trueValues, falseValues=falseValues)
-    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions["values"]))
+    pd.testing.assert_series_equal(x, pd.Series(error["values"]))
 
 
 def test_parses_valid_date() -> None:
@@ -446,7 +446,7 @@ def test_rejects_invalid_date() -> None:
         ]
     )
     error = parse_date(x)
-    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions["values"]))
+    pd.testing.assert_series_equal(x, pd.Series(error["values"]))
 
 
 @pytest.mark.xfail(reason="pd.Timestamp is limited to ~584 year range")
@@ -502,7 +502,7 @@ def test_rejects_invalid_datetime() -> None:
         ]
     )
     error = parse_datetime(x)
-    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions["values"]))
+    pd.testing.assert_series_equal(x, pd.Series(error["values"]))
 
 
 @pytest.mark.xfail(reason="pd.Timestamp wraps seconds > 59")
@@ -514,7 +514,7 @@ def test_rejects_datetime_with_outofrange_seconds() -> None:
         ]
     )
     error = parse_datetime(x)
-    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions["values"]))
+    pd.testing.assert_series_equal(x, pd.Series(error["values"]))
 
 
 def test_parses_valid_year() -> None:
@@ -541,7 +541,7 @@ def test_rejects_invalid_year() -> None:
         ]
     )
     error = parse_year(x)
-    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions["values"]))
+    pd.testing.assert_series_equal(x, pd.Series(error["values"]))
 
 
 def test_parses_valid_geopoint() -> None:
@@ -576,7 +576,7 @@ def test_rejects_invalid_geopoint() -> None:
         ]
     )
     error = parse_geopoint(x)
-    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions["values"]))
+    pd.testing.assert_series_equal(x, pd.Series(error["values"]))
 
 
 def test_parses_valid_geopoint_array() -> None:
@@ -611,7 +611,7 @@ def test_rejects_invalid_geopoint_array() -> None:
         ]
     )
     error = parse_geopoint(x, format="array")
-    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions["values"]))
+    pd.testing.assert_series_equal(x, pd.Series(error["values"]))
 
 
 def test_parses_valid_geopoint_object() -> None:
@@ -656,7 +656,7 @@ def test_rejects_invalid_geopoint_object() -> None:
         ]
     )
     error = parse_geopoint(x, format="object")
-    pd.testing.assert_series_equal(x, pd.Series(error._message_substitutions["values"]))
+    pd.testing.assert_series_equal(x, pd.Series(error["values"]))
 
 
 @pytest.mark.parametrize(
