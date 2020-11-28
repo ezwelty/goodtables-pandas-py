@@ -1,17 +1,24 @@
 """Table keys and field constraint checking."""
 from typing import Any, Dict, Iterable, List, Union
 
-import goodtables
 import pandas as pd
 from typing_extensions import Literal
 
-from .errors import constraint_error, foreign_key_error, key_error
+from .errors import (
+    ConstraintError,
+    ConstraintTypeError,
+    ForeignKeyError,
+    PrimaryKeyError,
+    UniqueKeyError,
+)
 from .parse import parse_field_constraint
 
 # ---- Field constraints ----
 
 
-def check_constraints(df: pd.DataFrame, schema: dict) -> List[goodtables.Error]:
+def check_constraints(
+    df: pd.DataFrame, schema: dict
+) -> List[Union[ConstraintError, ConstraintTypeError]]:
     """
     Check table field constraints.
 
@@ -42,7 +49,7 @@ def check_field_constraints(  # noqa: C901
     pattern: str = None,
     enum: Iterable[Union[str, int, float, bool]] = None,
     field: dict = {},
-) -> List[goodtables.Error]:
+) -> List[Union[ConstraintError, ConstraintTypeError]]:
     """
     Check field constraints.
 
@@ -69,11 +76,10 @@ def check_field_constraints(  # noqa: C901
     errors = []
     if required and x.isna().any():
         errors.append(
-            constraint_error(
-                name=name,
-                code="required-constraint",
-                constraint="required",
-                value=required,
+            ConstraintError(
+                fieldName=name,
+                constraintName="required",
+                constraintValue=required,
                 values=[float("nan")],
             )
         )
@@ -82,11 +88,10 @@ def check_field_constraints(  # noqa: C901
         invalid = x.duplicated()
         if invalid.any():
             errors.append(
-                constraint_error(
-                    name=name,
-                    code="unique-constraint",
-                    constraint="unique",
-                    value=unique,
+                ConstraintError(
+                    fieldName=name,
+                    constraintName="unique",
+                    constraintValue=unique,
                     values=list(x[invalid].unique()),
                 )
             )
@@ -96,11 +101,10 @@ def check_field_constraints(  # noqa: C901
         invalid = x.str.len() < minLength
         if invalid.any():
             errors.append(
-                constraint_error(
-                    name=name,
-                    code="minimum-length-constraint",
-                    constraint="minLength",
-                    value=minLength,
+                ConstraintError(
+                    fieldName=name,
+                    constraintName="minLength",
+                    constraintValue=minLength,
                     values=list(x[invalid].unique()),
                 )
             )
@@ -108,11 +112,10 @@ def check_field_constraints(  # noqa: C901
         invalid = x.str.len() > maxLength
         if invalid.any():
             errors.append(
-                constraint_error(
-                    name=name,
-                    code="maximum-length-constraint",
-                    constraint="minLength",
-                    value=maxLength,
+                ConstraintError(
+                    fieldName=name,
+                    constraintName="minLength",
+                    constraintValue=maxLength,
                     values=list(x[invalid].unique()),
                 )
             )
@@ -127,33 +130,31 @@ def check_field_constraints(  # noqa: C901
     )
     if minimum is not None and type in minmax_types:
         minimum = parse_field_constraint(minimum, "minimum", **field)
-        if isinstance(minimum, goodtables.Error):
+        if isinstance(minimum, ConstraintTypeError):
             errors.append(minimum)
         else:
             invalid = x < minimum
             if invalid.any():
                 errors.append(
-                    constraint_error(
-                        name=name,
-                        code="minimum-constraint",
-                        constraint="minimum",
-                        value=minimum,
+                    ConstraintError(
+                        fieldName=name,
+                        constraintName="minimum",
+                        constraintValue=minimum,
                         values=list(x[invalid].unique()),
                     )
                 )
     if maximum is not None and type in minmax_types:
         maximum = parse_field_constraint(maximum, "maximum", **field)
-        if isinstance(maximum, goodtables.Error):
+        if isinstance(maximum, ConstraintTypeError):
             errors.append(maximum)
         else:
             invalid = x > maximum
             if invalid.any():
                 errors.append(
-                    constraint_error(
-                        name=name,
-                        code="maximum-constraint",
-                        constraint="maximum",
-                        value=maximum,
+                    ConstraintError(
+                        fieldName=name,
+                        constraintName="maximum",
+                        constraintValue=maximum,
                         values=list(x[invalid].unique()),
                     )
                 )
@@ -161,27 +162,25 @@ def check_field_constraints(  # noqa: C901
         invalid = ~x.str.match("^" + pattern + "$")
         if invalid.any():
             errors.append(
-                constraint_error(
-                    name=name,
-                    code="pattern-constraint",
-                    constraint="pattern",
-                    value=pattern,
+                ConstraintError(
+                    fieldName=name,
+                    constraintName="pattern",
+                    constraintValue=pattern,
                     values=list(x[invalid].unique()),
                 )
             )
     if enum:
         enum = parse_field_constraint(enum, "enum", **field)
-        if isinstance(enum, goodtables.Error):
+        if isinstance(enum, ConstraintTypeError):
             errors.append(enum)
         else:
             invalid = ~x.isin(enum)
             if invalid.any():
                 errors.append(
-                    constraint_error(
-                        name=name,
-                        code="enumerable-constraint",
-                        constraint="enum",
-                        value=enum,
+                    ConstraintError(
+                        fieldName=name,
+                        constraintName="enum",
+                        constraintValue=enum,
                         values=list(x[invalid].unique()),
                     )
                 )
@@ -217,7 +216,7 @@ def check_primary_key(
     primaryKey: Union[str, List[str]],
     skip_required: bool = False,
     skip_single: bool = False,
-) -> List[goodtables.Error]:
+) -> List[Union[ConstraintError, PrimaryKeyError]]:
     """
     Check table primary key.
 
@@ -243,10 +242,8 @@ def check_primary_key(
         invalid = df.duplicated(subset=key)
         if invalid.any():
             errors.append(
-                key_error(
-                    code="primary-key-constraint",
-                    constraint="primaryKey",
-                    value=key,
+                PrimaryKeyError(
+                    primaryKey=key,
                     values=df[key][invalid].drop_duplicates().values.tolist(),
                 )
             )
@@ -257,7 +254,7 @@ def check_unique_keys(
     df: pd.DataFrame,
     uniqueKeys: Iterable[Union[str, List[str]]],
     skip_single: bool = False,
-) -> List[goodtables.Error]:
+) -> List[Union[ConstraintError, UniqueKeyError]]:
     """
     Check table unique keys.
 
@@ -277,10 +274,8 @@ def check_unique_keys(
         invalid = df.duplicated(subset=key)
         if invalid.any():
             errors.append(
-                key_error(
-                    code="unique-key-constraint",
-                    constraint="uniqueKey",
-                    value=key,
+                UniqueKeyError(
+                    uniqueKey=key,
                     values=df[key][invalid].drop_duplicates().values.tolist(),
                 )
             )
@@ -292,7 +287,7 @@ def check_foreign_keys(  # noqa: C901
     foreignKeys: Iterable[dict],
     references: Dict[str, pd.DataFrame] = {},
     constraint: Literal["uniquekey", "primarykey"] = None,
-) -> List[goodtables.Error]:
+) -> List[Union[ConstraintError, PrimaryKeyError, UniqueKeyError, ForeignKeyError]]:
     """
     Check table foreign keys.
 
@@ -329,15 +324,11 @@ def check_foreign_keys(  # noqa: C901
                 perrors = check_primary_key(parent, pkey)
         if perrors and parent is not child:
             for e in enumerate(perrors):
-                if "name" in e._message_substitutions:
-                    name = e._message_substitutions["name"]
-                    e._message_substitutions["name"] = parent_name + "." + name
+                if "fieldName" in e:
+                    e["fieldName"] = parent_name + "." + e["fieldName"]
                 else:
-                    e = foreign_key_error(
-                        code="foreign-key-constraint",
-                        constraint="foreignKey",
-                        value=foreignKey,
-                        values=e._message_substitutions["values"],
+                    e = ForeignKeyError(
+                        reference=parent_name, foreignKey=foreignKey, values=e["values"]
                     )
                 errors.append(e)
         # Check local key in parent key (or has null values)
@@ -352,10 +343,9 @@ def check_foreign_keys(  # noqa: C901
             )
         if invalid.any():
             errors.append(
-                key_error(
-                    code="foreign-key-constraint",
-                    constraint="foreignKey",
-                    value=foreignKey,
+                ForeignKeyError(
+                    reference=parent_name,
+                    foreignKey=foreignKey,
                     values=x[invalid].drop_duplicates().values.tolist(),
                 )
             )

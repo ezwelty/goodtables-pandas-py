@@ -1,17 +1,14 @@
 """Validate tabular data packages."""
-import datetime
-import math
-import re
-from typing import Dict, Tuple, Union
+import time
+from typing import Any, Dict, Tuple, Union
 
-import datapackage
-import goodtables
+import frictionless
 import pandas as pd
+from typing_extensions import Literal
 
 from .check import (
     _as_list,
     check_constraints,
-    check_field_constraints,
     check_foreign_keys,
     check_primary_key,
     check_unique_keys,
@@ -21,46 +18,53 @@ from .read import read_table
 
 
 def validate(  # noqa: C901
-    source: Union[str, dict], return_tables: bool = False
-) -> Union[dict, Tuple[dict, Dict[str, pd.DataFrame]]]:
+    source: Union[str, dict],
+    source_type: Literal["package"] = "package",
+    return_tables: bool = False,
+    **options: Any,
+) -> Union[frictionless.Report, Tuple[frictionless.Report, Dict[str, pd.DataFrame]]]:
     """
-    Validate Tabular Data Package.
+    Validate a Tabular Data Package.
+
+    This is a wrapper of :func:`frictionless.validate`:
+    https://frictionlessdata.io/tooling/python/api-reference/#frictionless-validate
 
     Arguments:
-        source: Path to or content of a Tabular Data Package descriptor
-            (https://specs.frictionlessdata.io/tabular-data-package).
+        source: Path to, or content of, a Tabular Data Package descriptor.
+        source_type: Souce type (currently limited to "package").
         return_tables: Whether to return the tables read and parsed during validation.
+        **options: Optional arguments to :func:`frictionless.validate_package` and
+            :func:`frictionless.validate_table`.
+
+    Raises:
+        NotImplementedError: Source type not supported.
 
     Returns:
         An error report and (if `return_tables=True`) the tables.
     """
+    if source_type != "package":
+        raise NotImplementedError(f"source_type {source_type} not supported")
     # Start clock
-    start = datetime.datetime.now()
+    start = time.time()
     # Initialize report
-    checks = [
-        "blank-header",
-        "duplicate-header",
-        "non-matching-header",
-        "extra-header",
-        "missing-header",
-    ]
-    report = goodtables.validate(
-        source=source,
-        preset="datapackage",
-        checks=checks,
-        table_limit=math.inf,
-        row_limit=0,
-    )
-    # Remove row_limit warnings
-    report["warnings"] = [
-        w for w in report["warnings"] if re.match(r"row\(s\) limit", w)
-    ]
-    # Retrieve descriptor
-    package = datapackage.Package(source).descriptor
-    resources = package.get("resources", [])
+    options = {
+        # Non-header rows are checked with pandas (limit_rows=0 not permitted)
+        "query": frictionless.Query(limit_rows=1),
+        "skip_errors": ["#body"],
+        # Foreign key checks are performed with pandas
+        "nolookup": True,
+        # Use existing schema rather than inferring one from a data sample
+        "noinfer": True,
+        # Multiprocessing not worth overhead for metadata and header checks
+        "nopool": True,
+        **options,
+    }
+    report = frictionless.validate(source=source, source_type=source_type, **options)
+    # Load resource descriptors (report descriptors missing resource name)
+    resources = frictionless.Package(source).get("resources", [])
     names = [resource["name"] for resource in resources]
-    # Expand descriptor
-    for resource, name in zip(resources, names):
+    # Standardize format of resource schema attributes
+    for resource in resources:
         schema = resource["schema"]
         if "primaryKey" in schema:
             schema["primaryKey"] = _as_list(schema["primaryKey"])
@@ -73,20 +77,20 @@ def validate(  # noqa: C901
                 foreignKey["reference"]["fields"]
             )
     # Remove duplicate key checks
-    for resource, name in zip(resources, names):
+    for resource in resources:
         schema = resource["schema"]
         # foreignKey.reference: Add to reference.uniqueKeys
         foreignKeys = schema.get("foreignKeys", [])
         for foreignKey in foreignKeys:
             key = foreignKey["reference"]["fields"]
-            parent = foreignKey["reference"]["resource"] or name
+            parent = foreignKey["reference"]["resource"] or resource["name"]
             i = names.index(parent)
             keys = resources[i]["schema"].get("uniqueKeys", [])
             keys.append(key)
             resources[i]["schema"]["uniqueKeys"] = [
                 list(t) for t in set(tuple(k) for k in keys)
             ]
-    for resource, name in zip(resources, names):
+    for resource in resources:
         required, unique = [], []
         schema = resource["schema"]
         # primaryKey: Move to field.constraint.required, uniqueKey
@@ -112,49 +116,33 @@ def validate(  # noqa: C901
                 field["constraints"]["unique"] = True
     # Read and parse tables
     dfs = {}
-    for i, resource in enumerate(package.get("resources", [])):
-        # Skip if header error
+    for i, resource in enumerate(resources):
+        table_start = time.time()
+        # Table body is not checked if table failed initial check
         if not report["tables"][i]["valid"]:
             continue
-        errors = []
         # Read table
-        # Pull resolved paths from goodtables
-        paths = _as_list(report["tables"][i].get("source", ""))
+        # Pull resolved relative paths from report
+        paths = _as_list(report["tables"][i].get("path", ""))
         result = read_table(resource, path=paths)
         if isinstance(result, list):
-            errors += result
-            report["tables"][i]["errors"] += errors
+            report["tables"][i]["errors"] += result
             continue
-        # Before parsing, run checks on:
-        # constraint: pattern | type: ~string
-        # constraint: minLength, maxLength | type: ~(string, array, object)
-        for field in resource.get("schema", {}).get("fields", []):
-            constraints = field.get("constraints", {})
-            x = result[field.get("name", None)]
-            if field.get("type", "string") not in ("string",):
-                if "pattern" in constraints:
-                    errors += check_field_constraints(
-                        x, pattern=constraints["pattern"], field=field
-                    )
-            if field.get("type", "string") not in ("string", "array", "object"):
-                if "minLength" in constraints:
-                    errors += check_field_constraints(
-                        x, minLength=constraints["minLength"], field=field
-                    )
-                if "maxLength" in constraints:
-                    errors += check_field_constraints(
-                        x, maxLength=constraints["maxLength"], field=field
-                    )
         # Parse table
+        report["tables"][i]["scope"] += ["type-error"]
         result = parse_table(result, schema=resource.get("schema", {}))
         if isinstance(result, list):
-            errors += result
-            report["tables"][i]["errors"] += errors
+            report["tables"][i]["errors"] += result
             continue
-        # Check table
+        # Check field constraints and table keys
+        report["tables"][i]["scope"] += [
+            "constraint-error",
+            "unique-error",
+            "primary-key-error",
+        ]
         name = resource["name"]
         dfs[name] = result
-        errors += (
+        errors = (
             check_constraints(dfs[name], schema=resource.get("schema", {}))
             + check_primary_key(
                 dfs[name],
@@ -169,11 +157,14 @@ def validate(  # noqa: C901
             )
         )
         report["tables"][i]["errors"] += errors
-        report["tables"][i]["row-count"] = len(dfs[name])
+        report["tables"][i]["stats"]["rows"] = len(dfs[name])
+        report["tables"][i]["time"] += time.time() - table_start
     # Check foreign keys
-    for i, resource in enumerate(package.get("resources", [])):
+    for i, resource in enumerate(resources):
+        table_start = time.time()
         name = resource["name"]
         if name not in dfs:
+            # Skip check if table was invalid
             continue
         errors = check_foreign_keys(
             dfs[name],
@@ -182,23 +173,25 @@ def validate(  # noqa: C901
             constraint=None,
         )
         report["tables"][i]["errors"] += errors
+        report["tables"][i]["time"] += time.time() - table_start
+        report["tables"][i]["scope"] += ["foreign-key-error"]
     # Update report
-    counts = []
+    table_errors = 0
     for i, table in enumerate(report["tables"]):
-        count = len(table["errors"])
-        table["error-count"] = count
-        table["valid"] = count == 0
+        nerrors = len(table["errors"])
+        table["stats"]["errors"] = nerrors
+        table["valid"] = nerrors == 0
         table["errors"] = [
             {k: v for k, v in dict(e).items() if v is not None}
-            if isinstance(e, goodtables.Error)
+            if isinstance(e, frictionless.errors.Error)
             else e
             for e in table["errors"]
         ]
-        counts.append(count)
-        table.pop("time")
-    report["error-count"] = sum(counts)
-    report["valid"] = sum(counts) == 0
-    report["time"] = datetime.datetime.now() - start
+        table_errors += nerrors
+    total_errors = len(report["errors"]) + table_errors
+    report["stats"]["errors"] = total_errors
+    report["valid"] = not total_errors
+    report["time"] = time.time() - start
     # Return report
     if return_tables:
         return report, dfs
