@@ -183,12 +183,6 @@ def validate(  # noqa: C901
         nerrors = len(table["errors"])
         table["stats"]["errors"] = nerrors
         table["valid"] = nerrors == 0
-        table["errors"] = [
-            {k: v for k, v in dict(e).items() if v is not None}
-            if isinstance(e, frictionless.errors.Error)
-            else e
-            for e in table["errors"]
-        ]
         table_errors += nerrors
     total_errors = len(report["errors"]) + table_errors
     report["stats"]["errors"] = total_errors
