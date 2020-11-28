@@ -158,6 +158,8 @@ def validate(  # noqa: C901
         )
         report["tables"][i]["errors"] += errors
         report["tables"][i]["stats"]["rows"] = len(dfs[name])
+        # Remove row limit used for initial report
+        report["tables"][i]["query"] = None
         report["tables"][i]["time"] += time.time() - table_start
     # Check foreign keys
     for i, resource in enumerate(resources):
